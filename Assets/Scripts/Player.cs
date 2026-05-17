@@ -11,14 +11,24 @@ public class Player : MonoBehaviour
 
     public LayerMask groundLayer;
     public LayerMask enemyLayer;
+    
     RaycastHit2D jumpCheck;
     public bool isGround;
     bool isAttack;
     int attackCount;  // 공격 횟수를 저장할 변수
 
+    public float rollDistance;
+    public float rollDurationTime;  // 구르기 하는 시간
+    public float rollCoolTime;  // 구르기 대기 시간(쿨타임)
+    bool isRoll;  // 대쉬(구르기) 중인지 확인하는 변수
+    bool canRoll;  // 구르기가 가능한지 여부 확인 변수
+    WaitForSeconds rollDuration;
+    WaitForSeconds rollCool;
+
     Rigidbody2D rigid;
     SpriteRenderer spriteR;
     Animator animator;
+    CapsuleCollider2D coll;
 
     WaitForSeconds attackDelay;
     Collider2D attackedEnemy;
@@ -46,18 +56,25 @@ public class Player : MonoBehaviour
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        coll = GetComponent<CapsuleCollider2D>();
         isGround = true;
+        canRoll = true;
+        rollDuration = new WaitForSeconds(rollDurationTime);
+        rollCool = new WaitForSeconds(rollCoolTime);
         attackDelay = new WaitForSeconds(0.5f);
         animator.SetBool("Grounded", isGround);
     }
 
     private void Update()
     {
+        if (isRoll)
+            return;
+
         animator.SetFloat("AirSpeedY", rigid.linearVelocityY);
 
         if(rigid.linearVelocityY <= 0)
         {
-            rigid.gravityScale = 1.75f;
+            rigid.gravityScale = 2f;
             jumpCheck = Physics2D.Raycast(transform.position, Vector2.down, 1f, groundLayer);
             if (jumpCheck.collider != null && !isGround)
             {
@@ -69,6 +86,9 @@ public class Player : MonoBehaviour
 
     void LateUpdate()
     {
+        if (isRoll)
+            return;
+
         if (direction > 0)
             spriteR.flipX = false;
         else if (direction < 0)
@@ -97,7 +117,7 @@ public class Player : MonoBehaviour
 
     void OnMove(InputValue value)
     {
-        if (isAttack)
+        if (isAttack || isRoll)
         {
             direction = 0f;
             return;
@@ -106,7 +126,7 @@ public class Player : MonoBehaviour
         direction = value.Get<Vector2>().x;
     }
 
-    public void OnJump(InputValue value)
+    void OnJump(InputValue value)
     {
         if (isGround)
         {
@@ -124,7 +144,7 @@ public class Player : MonoBehaviour
         // 첫 번째 공격 중 J키 입력 - 두 번째 공격
         // 두 번째 공격 중 J키 입력 - 세 번째 공격
         // 공격이 끝날 때까지 후속 입력이 없다면 해당 공격 종료 후 초기화
-        if (!isAttack && isGround)
+        if (!isAttack && isGround && !isRoll)
         {
             ++attackCount;
             boxDirection = spriteR.flipX ? -1f : 1f;
@@ -134,6 +154,7 @@ public class Player : MonoBehaviour
             ++attackCount;
         }
     }
+
 
     IEnumerator AttackRoutine()
     {
@@ -185,6 +206,53 @@ public class Player : MonoBehaviour
         {
             attackedEnemy.GetComponent<Enemy>().curHp -= 5f;
         }
+    }
+
+    void StopAttack()
+    {
+        StopCoroutine(AttackRoutine());
+
+        // 공격 진행 중에 코루틴을 종료시켰기 때문에 공격에 필요한 값들이 초기화되지 않은 상태가 되기 때문에 초기화를 따로 시켜주어야 한다.
+        attackCount = 0;
+        isAttack = false;
+        m_Started = false;
+    }
+
+    void OnRoll(InputValue value)
+    {
+        if (canRoll && isGround)
+        {
+            StartCoroutine(RollRoutine());
+        }
+    }
+
+    IEnumerator RollRoutine()
+    {
+        // 공격 중이어도 구르기 버튼을 누르면 공격을 중단하고 구르도록 설정
+        if (isAttack)
+        {
+            StopAttack();
+        }
+
+        // 구르기를 누르면 애니메이션만 작동되고 이동이 되지 않는 문제가 발생. 해결 요망
+
+        isRoll = true;
+        canRoll = false;
+        rigid.gravityScale = 0f;
+        float rollDirection = spriteR.flipX ? -1f : 1f;
+        rigid.linearVelocityX = rollDirection * rollDistance;
+        coll.enabled = false;  // 구르는 시간 동안은 무적이 되도록 콜라이더를 잠시 꺼준다.
+        animator.SetTrigger("Roll");
+
+        yield return rollDuration;
+
+        isRoll = false;
+        coll.enabled = true;
+        rigid.gravityScale = 2f;
+
+        yield return rollCool;
+
+        canRoll = true;
     }
 
     // overlapbox의 범위를 씬 화면에 그려주기 위해 호출한 함수(함수 내에서 설정한 기즈모를 그려주는 함수로 추정된다.)
