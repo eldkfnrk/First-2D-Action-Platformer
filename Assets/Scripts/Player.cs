@@ -14,9 +14,15 @@ public class Player : MonoBehaviour
     public LayerMask enemyLayer;
     
     RaycastHit2D jumpCheck;
-    public bool isGround;
+    public float fallSpeed;
+    bool isGround;
+
+
     bool isAttack;
     int attackCount;  // 공격 횟수를 저장할 변수
+
+    RaycastHit2D wallCheck;
+    bool isWall;
 
     public float rollSpeed;
     public float rollDurationTime;  // 구르기 하는 시간
@@ -74,12 +80,21 @@ public class Player : MonoBehaviour
         if (isRoll)
             return;
 
+        wallCheck = Physics2D.BoxCast(transform.position, transform.localScale, 0f, Vector2.right * direction, 0.2f, groundLayer);
+        jumpCheck = Physics2D.Raycast(transform.position, Vector2.down, 1f, groundLayer);
+
+        if (wallCheck.collider != null && jumpCheck.collider == null)
+        {
+            isWall = true;
+            rigid.linearVelocityY = -0.2f;  // 서서히 하락하도록
+            animator.SetBool("WallSlide", isWall);
+        }
+
         animator.SetFloat("AirSpeedY", rigid.linearVelocityY);
 
-        if(rigid.linearVelocityY <= 0)
+        if(rigid.linearVelocityY <= 0 && !isWall)
         {
-            rigid.gravityScale = 2f;
-            jumpCheck = Physics2D.Raycast(transform.position, Vector2.down, 1f, groundLayer);
+            rigid.gravityScale = fallSpeed;
             if (jumpCheck.collider != null && !isGround)
             {
                 isGround = true;
@@ -125,7 +140,15 @@ public class Player : MonoBehaviour
     public void OnMove(InputAction.CallbackContext context)
     {
         if (context.started || context.performed)
+        {
             direction = context.ReadValue<Vector2>().x;
+            if (direction > 0)
+                direction = 1f;
+            else if (direction < 0)
+                direction = -1f;
+
+            Debug.Log(direction);
+        }
         else if (context.canceled)
             direction = 0f;
     }
@@ -143,10 +166,18 @@ public class Player : MonoBehaviour
             animator.SetTrigger("Jump");
             rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         }
+        else if(context.started && isWall)
+        {
+            float reverseDirection = spriteR.flipX ? 1f : -1f;  // 반대 방향을 얻는 값
+            rigid.AddForce(new Vector2(reverseDirection * 1.5f, jumpPower), ForceMode2D.Impulse);
+        }
     }
 
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isWall)
+            return;
+
         // J키 입력 - 첫 번째 공격
         // 첫 번째 공격 중 J키 입력 - 두 번째 공격
         // 두 번째 공격 중 J키 입력 - 세 번째 공격
@@ -263,7 +294,7 @@ public class Player : MonoBehaviour
 
         isRoll = false;
         coll.enabled = true;
-        rigid.gravityScale = 2f;
+        rigid.gravityScale = fallSpeed;
 
         yield return rollCool;
 
@@ -293,6 +324,8 @@ public class Player : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
+        Vector2 boxCastPos = new Vector2(transform.position.x, transform.position.y);
+        Gizmos.DrawWireCube(boxCastPos, transform.localScale);
         if (m_Started)
         {
             Gizmos.DrawWireCube(boxPosition, boxSize);
