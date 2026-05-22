@@ -23,6 +23,8 @@ public class Player : MonoBehaviour
 
     RaycastHit2D wallCheck;
     bool isWall;
+    float wallBoxDirection;
+    Vector2 wallCheckBoxSize;
 
     public float rollSpeed;
     public float rollDurationTime;  // 구르기 하는 시간
@@ -42,13 +44,11 @@ public class Player : MonoBehaviour
     WaitForSeconds attackDelay;
     Collider2D attackedEnemy;
 
-    public float distance;  // overlapbox가 플레이어로부터 x축으로 얼마나 떨어져 있도록 하는지 정하는 변수
-    public Vector2 boxSize;  // overlapbox 크기
-
     bool m_Started;  // overlapbox의 크기 확인을 위한 기즈모 on/off 결정 변수
 
-    float boxDirection;  // 플레이어 기준 overlapbox가 나올 방향(-방향인지 +방향인지)
-    Vector2 boxPosition;  // overlapbox가 생기는 위치
+    public Vector2 attackBoxSize;  // overlapbox 크기
+    float attackBoxDirection;  // 플레이어 기준 overlapbox가 나올 방향(-방향인지 +방향인지)
+    Vector2 attackBoxPosition;  // overlapbox가 생기는 위치
 
     enum AttackState
     {
@@ -73,6 +73,7 @@ public class Player : MonoBehaviour
         rollCool = new WaitForSeconds(rollCoolTime - rollDurationTime);
         attackDelay = new WaitForSeconds(0.42f);
         animator.SetBool("Grounded", isGround);
+        wallCheckBoxSize = new Vector2(transform.localScale.x * 0.25f, transform.localScale.y * 0.75f);
     }
 
     private void Update()
@@ -80,20 +81,33 @@ public class Player : MonoBehaviour
         if (isRoll)
             return;
 
-        wallCheck = Physics2D.BoxCast(transform.position, transform.localScale, 0f, Vector2.right * direction, 0.2f, groundLayer);
+        // 벽에 붙는 조건
+        // 나의 진행 방향에 벽이 있다 && 바닥과 떨어져 있다
+        // 벽에 붙어 있을 때
+        // 구르기, 공격, 방어 불가능 -> 점프를 누르면 벽과 반대되는 방향으로 떨어지면서 점프
+        // 이동 키를 누르고 있어도 미끄러지도록 설정하여야 한다.
+        wallBoxDirection = spriteR.flipX ? -1f : 1f;
+        wallCheck = Physics2D.BoxCast(transform.position, wallCheckBoxSize, 0f, Vector2.right * wallBoxDirection, 0.35f, groundLayer);
         jumpCheck = Physics2D.Raycast(transform.position, Vector2.down, 1f, groundLayer);
 
         if (wallCheck.collider != null && jumpCheck.collider == null)
         {
             isWall = true;
+            isGround = false;
+            direction = 0f;
             rigid.linearVelocityY = -0.2f;  // 서서히 하락하도록
+            animator.SetBool("WallSlide", isWall);
+            Debug.Log(wallCheck.collider.gameObject);
+        }
+        else
+        {
+            isWall = false;
             animator.SetBool("WallSlide", isWall);
         }
 
-        animator.SetFloat("AirSpeedY", rigid.linearVelocityY);
-
         if(rigid.linearVelocityY <= 0 && !isWall)
         {
+            animator.SetFloat("AirSpeedY", rigid.linearVelocityY);
             rigid.gravityScale = fallSpeed;
             if (jumpCheck.collider != null && !isGround)
             {
@@ -146,8 +160,6 @@ public class Player : MonoBehaviour
                 direction = 1f;
             else if (direction < 0)
                 direction = -1f;
-
-            Debug.Log(direction);
         }
         else if (context.canceled)
             direction = 0f;
@@ -166,10 +178,12 @@ public class Player : MonoBehaviour
             animator.SetTrigger("Jump");
             rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         }
-        else if(context.started && isWall)
+        
+        if(context.started && isWall)
         {
             float reverseDirection = spriteR.flipX ? 1f : -1f;  // 반대 방향을 얻는 값
-            rigid.AddForce(new Vector2(reverseDirection * 1.5f, jumpPower), ForceMode2D.Impulse);
+            rigid.AddForce(new Vector2(reverseDirection * 2f, jumpPower), ForceMode2D.Impulse);
+            isWall = false;
         }
     }
 
@@ -185,7 +199,7 @@ public class Player : MonoBehaviour
         if (!isAttack && isGround && !isRoll && context.started)
         {
             ++attackCount;
-            boxDirection = spriteR.flipX ? -1f : 1f;
+            attackBoxDirection = spriteR.flipX ? -1f : 1f;
             StartCoroutine(AttackRoutine());
         } else if (context.started && isAttack && attackCount < 3)
         {
@@ -197,8 +211,8 @@ public class Player : MonoBehaviour
     IEnumerator AttackRoutine()
     {
         isAttack = true;
-        boxPosition.x = transform.position.x + boxDirection;
-        boxPosition.y = transform.position.y;
+        attackBoxPosition.x = transform.position.x + attackBoxDirection;
+        attackBoxPosition.y = transform.position.y;
         attackState = AttackState.Attack1;
         AttackEnemy();
 
@@ -238,7 +252,7 @@ public class Player : MonoBehaviour
     void AttackEnemy()
     {
         animator.SetTrigger(attackState.ToString());
-        attackedEnemy = Physics2D.OverlapBox(boxPosition, boxSize, 0f, enemyLayer);
+        attackedEnemy = Physics2D.OverlapBox(attackBoxPosition, attackBoxSize, 0f, enemyLayer);
 
         if (attackedEnemy != null)
         {
@@ -287,6 +301,7 @@ public class Player : MonoBehaviour
         rigid.gravityScale = 0f;
         float rollDirection = spriteR.flipX ? -1f : 1f;
         rigid.linearVelocityX = rollDirection * rollSpeed;
+        rigid.linearVelocityY = 0f;
         coll.enabled = false;  // 구르는 시간 동안은 무적이 되도록 콜라이더를 잠시 꺼준다.
         animator.SetTrigger("Roll");
 
@@ -324,11 +339,11 @@ public class Player : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Vector2 boxCastPos = new Vector2(transform.position.x, transform.position.y);
-        Gizmos.DrawWireCube(boxCastPos, transform.localScale);
+        Vector2 boxCastPos = new Vector2(transform.position.x + 0.235f * wallBoxDirection, transform.position.y);
+        Gizmos.DrawWireCube(boxCastPos, wallCheckBoxSize);
         if (m_Started)
         {
-            Gizmos.DrawWireCube(boxPosition, boxSize);
+            Gizmos.DrawWireCube(attackBoxPosition, attackBoxSize);
         }
     }
 }

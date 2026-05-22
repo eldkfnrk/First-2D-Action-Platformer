@@ -420,8 +420,7 @@ MonoBehaviour:
   rollSpeed: 7
   rollDurationTime: 0.5
   rollCoolTime: 1
-  distance: 1
-  boxSize: {x: 0.9, y: 1.2}
+  attackBoxSize: {x: 1, y: 1}
 --- !u!50 &812280542
 Rigidbody2D:
   serializedVersion: 5
