@@ -4,8 +4,6 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
-    bool cantAnyKeyInput;  // 모든 키 입력 및 행동 막는 변수
-
     float moveSpeed;
     public float defaultMoveSpeed;
     public float blockMoveSpeed;
@@ -81,9 +79,6 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        if (cantAnyKeyInput)
-            return;
-
         if (isRoll || isAttack)
             return;
 
@@ -98,25 +93,30 @@ public class Player : MonoBehaviour
         wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, 0.5f, groundLayer);
         groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
 
+        if (isWall)
+        {
+            rigid.linearVelocityY = 0f;
+            if (wallCheck.collider == null || groundCheck.collider != null)  // 벽에 붙어있는데 앞에 벽이 없거나 바닥에 착지하고 있는 상태
+            {
+                // 착지 여부는 이곳이 아닌 아래에서 진행 - 왜냐하면 벽에서 떨어지는데 땅이 아닐 수도 있기 때문에 값을 바꿔버리면 문제가 발생할 수가 있어서이다.
+                isWall = false;
+                animator.SetBool("WallSlide", isWall);
+            }
+        }
         // 벽에 붙는 조건
         // 나의 진행 방향에 벽이 있다, 바닥에서 떨어져 있다, 구르지 않고 있다, 공격하지 않고 있다.
-        if (!isWall && wallCheck.collider != null && groundCheck.collider == null)  // 벽에 붙어있지 않는 상태인데 앞에 벽이 있고 바닥에 착지하고 있지 않은 상태
+        else
         {
-            isWall = true;
-            isGround = false;
-            animator.SetBool("WallSlide", isWall);
-            animator.SetBool("Grounded", isGround);
-            rigid.linearVelocityY = 0f;  // 벽에 붙으면 멈추도록 y축 속도를 0으로 고정시킨다.
-            animator.SetFloat("AirSpeedY", -0.1f);
+            if (wallCheck.collider != null && groundCheck.collider == null)  // 벽에 붙어있지 않는 상태인데 앞에 벽이 있고 바닥에 착지하고 있지 않은 상태
+            {
+                isWall = true;
+                isGround = false;
+                animator.SetBool("WallSlide", isWall);
+                animator.SetBool("Grounded", isGround);
+                rigid.linearVelocityY = 0f;  // 벽에 붙으면 멈추도록 y축 속도를 0으로 고정시킨다.
+                animator.SetFloat("AirSpeedY", -0.1f);
+            }
         }
-        else if (isWall && (wallCheck.collider == null || groundCheck.collider != null))  // 벽에 붙어있는데 앞에 벽이 없거나 바닥에 착지하고 있는 상태
-        {
-            // 착지 여부는 이곳이 아닌 아래에서 진행 - 왜냐하면 벽에서 떨어지는데 땅이 아닐 수도 있기 때문에 값을 바꿔버리면 문제가 발생할 수가 있어서이다.
-            isWall = false;
-            animator.SetBool("WallSlide", isWall);
-        }
-
-        Debug.Log(rigid.linearVelocityY);
         
         if(!isWall && !isGround && rigid.linearVelocityY < 0f)
         {
@@ -136,8 +136,13 @@ public class Player : MonoBehaviour
 
         // 문제 발생
         // 1. 벽에 붙어도 y축 속도가 0이 되지 않음
+        // 1번 문제는 Update에서 속도를 제어해서 물리 계산과 어긋나 중력 적용되어서 그렇게 된 것이다. 그러나 이것이 뭔가 더 현실 같고 게임 플레이적으로도 좋은 거 같으니 둘지 바꿀지 고민 필요
         // 2. 벽에 붙어 있다가 바닥에 착지하거나 벽 방향과 반대 방향 키를 입력하면 "'Player' AnimationEvent 'AE_SlideDust' on animation 'HeroKnight_WallSlide' has no receiver! Are you missing a component?"라는 문구 발생
+        // 2번 문제는 WallSlide 애니메이션 중 먼지를 일으키는 VFX용 애니메이션이 호출되는 이벤트가 있는데 현재 버전에서는 호환이 안 되는지 정상 작동이 안 되는 상태이기 때문에 따로 함수를 만들어 연결하는 것이 필요
         // 3. 벽에 붙어 있을 때 x축을 떨어뜨리기 위한 코드를 실행할 때 제대로 동작하지 않고 애니메이션도 정상 작동하지 않음
+
+        // 현재 모든 문제가 정확히 파악 없이 진행되는 것에서 야기된 문제이기 때문에 먼저 애니메이션 파악과 벽에 붙어있을 때와 떨어져 있을 때를 구분하여 정확하게 판단하는 것을 우선으로 가지고 가야 뭔가가 이뤄질 것이다.
+        // 그럼에도 안 되었다면 아예 지식이 없는 상태인데 문제를 풀어보겠다는 것이기 때문에 계란으로 바위를 부수겠다는 행동이니 이를 지양하도록 검색과 AI를 활용한 해결을 진행하도록 할 것이다. 이는 1~2일 안에 결정하여야 한다.
 
         // 벽에 붙을 시 애니메이션 관련
         // 점프를 했을 수도 있으니 점프 여부 상관 없이 Grounded 파라미터 값을 true로 변환, 벽에 붙어 있는 것이기 때문에 WallSide 파라미터 값 true로 변환, 떨어지는 중이 아니기 때문에 AirSpeedY 파라미터 값을 0으로 변환
@@ -147,9 +152,6 @@ public class Player : MonoBehaviour
 
     void LateUpdate()
     {
-        if (cantAnyKeyInput)
-            return;
-
         if (isRoll || isAttack || isWall)
             return;
 
@@ -161,10 +163,7 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (cantAnyKeyInput)
-            return;
-
-        if (isRoll || isWall)
+        if (isRoll)
             return;
 
         if (isAttack)
@@ -187,9 +186,6 @@ public class Player : MonoBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (cantAnyKeyInput)
-            return;
-
         direction = context.ReadValue<Vector2>().x;
 
         if (direction > 0f)
@@ -199,31 +195,18 @@ public class Player : MonoBehaviour
 
         if (isWall && direction != sightDirection)  // 벽에 붙어있는 상황에서 벽의 방향과 반대 방향 키 입력 시
         {
-            isWall = false;
-            animator.SetBool("WallSlide", isWall);
-            animator.SetFloat("AirSpeedY", -1f);
-            rigid.AddForce(Vector2.right * direction * 0.3f, ForceMode2D.Impulse);  // 살짝 반대 쪽으로 튕겨 나가도록 설정
-            cantAnyKeyInput = true;
-            Invoke("CanAnyKeyInput", 0.1f);
+            
         }
 
         // 주의점 - 벽에 붙어있을 때는 벽에 딱 달라붙어 있고 아래 키 입력은 밑으로 느리게 내려가도록 한다. 벽을 타고 오르는 것은 허락하지 않는다.
         if (isWall && context.ReadValue<Vector2>().y < 0f)
         {
-            rigid.linearVelocityY = -0.5f;
+            
         }
-    }
-
-    void CanAnyKeyInput()
-    {
-        cantAnyKeyInput = false;
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (cantAnyKeyInput)
-            return;
-
         if (isRoll || isAttack)
             return;
 
@@ -235,7 +218,7 @@ public class Player : MonoBehaviour
             // 벽과 반대되는 방향으로 살짝 튕겨 나가면서 위로 점프
             if (isWall)
             {
-
+                
             }
             else if (isGround)
             {
@@ -250,9 +233,6 @@ public class Player : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (cantAnyKeyInput)
-            return;
-
         if (isWall)
             return;
 
@@ -336,9 +316,6 @@ public class Player : MonoBehaviour
 
     public void OnRoll(InputAction.CallbackContext context)
     {
-        if (cantAnyKeyInput)
-            return;
-
         if (canRoll && isGround)
         {
             StartCoroutine(RollRoutine());
@@ -385,7 +362,7 @@ public class Player : MonoBehaviour
 
     public void OnBlock(InputAction.CallbackContext context)
     {
-        if (cantAnyKeyInput)
+        if (isWall)
             return;
 
         if (context.started)
