@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -76,6 +77,60 @@ public class Player : MonoBehaviour
         attackDelay = new WaitForSeconds(0.42f);
         animator.SetBool("Grounded", isGround);
     }
+
+    // 벽에 붙은 것으로 인식하는 조건
+    // 1. 플레이어와 바닥 간 일정 거리 이상 떨어져 있다.
+    // 2. 플레이어의 이동 방향에 벽이 존재한다.
+    // 점점 내려가서 바닥에 착지하였다고 판단하면 벽에 붙은 것이 아닌 것으로 인식하도록 설정하여야 한다. 그리고 이 거리는 크면 안 되고 작게 가져가야 한다.
+
+    // 벽에 붙은 경우
+    // 1. 벽 방향으로 이동 불가, 위로 이동 불가, 아래는 떨어지는 속도가 늘어나도록 설정(점프를 제외한 거의 모든 동작이 실행 불가능하도록 설정하여야 한다.)
+    // 2. 벽에 붙었을 때는 자연스럽게 보이도록 조금씩 내려가도록 설정 -> 이는 Update에서 rigidbody의 y축 속도를 0으로 조절하면 알아서 중력이 계산되기에 Update에서 y축 속도를 조절(FixedUpdate에서 조절하면 딱 0이 되어서 떨어지지 않는다. 이 방법도 되는지 실험해 볼 필요는 있다.)
+    // 3. 벽 방향과 반대되는 방향 키를 입력하면 살짝의 튕겨나가는 힘과 함께 벽에서 떨어지도록 설정
+    // 4. 점프를 누르면 벽과 반대되는 방향으로 튕겨나가면서 점프되도록 설정
+    // 3, 4번의 경우 잠깐 동안 다른 키를 입력할 수 없게 막아야 한다. 그리고 이 동작은 AddForce라는 물리 동작을 사용할 것이기 때문에 FixedUpdate에서 실행할 방법을 모색하여야 한다.
+
+    // 벽에 붙지 않은 경우
+    // 이동하기, 구르기, 공격하기, 방어하기, 점프하기
+    // 구르기 - 구르는 중 다른 방향 이동, 공격, 방어, 점프 불가능(구를 때 앞에 벽이 있는 경우 x축 속도가 0이 되도록 하여야 한다. 구를 때는 콜라이더를 꺼서 충돌 처리가 되지 않기 때문에 수동으로 조작해줘야 한다.)
+    // 공격하기 - 공격 중 다른 방향 이동, 점프, 방어 불가능
+    // 방어하기 - 방어 중 이동 속도 저하, 구르기나 공격하기 점프하기를 하면 방어 상태 해제
+    // 점프하기 - 점프 중 공격, 방어, 구르기 불가능
+
+
+    // 캐릭터 애니메이션 분석
+    // 애니메이션은 한 애니메이션만 동작하고 이 애니메이션이 동작 중인 상황에서 이 애니메이션에 설정된 트랜잭션의 컨디션 상황이 적용되면 트랜잭션을 따라 다른 애니메이션으로 이동하는 구조로 되어 있다.
+    // 기본 값 : Idle
+    // Idle 상태에서 왔다갔다하는 관계
+    // Idle -> Run (AnimState = 1, Grounded = true)
+    // Run -> Idle (AnimState != 1)
+    // Run -> Fall (Grounded = false, AirSpeedY < 0f)
+    // Idle -> Fall (Grounded = false, AirSpeedY < 0f)
+    // Fall -> Idle (Grounded = true)
+    // Any State : 어떤 애니메이션이 동작 중이던 트랜잭션의 컨디션에 맞는 상황이 오면 바로 해당 애니메이션으로 옮기는 것을 의미
+    // Any State -> Idle_Block (IdleBlock = true)
+    // Any State -> Attack1 (Attack1 트리거)
+    // Any State -> Attack2 (Attack2 트리거)
+    // Any State -> Attack3 (Attack3 트리거)
+    // Any State -> Roll (Roll 트리거)
+    // Any State -> WallSlide (WallSlide = true, Grounded = false, AirSpeedY < 0f)
+    // Any State -> Hurt (Hurt 트리거)
+    // Any State -> Death (noBlood = false, Death 트리거)
+    // Any State -> DeathNoBlood (noBlood = true, Death 트리거)
+    // Any State -> Jump (Jump 트리거)
+    // Jump는 올라갈 때와 내려갈 때가 나뉘어져 있다.
+    // Any State에선 Jump는 트리거로 동작하지만 점프 후 떨어질 때 애니메이션도 따로 있어서 해당 애니메이션 동작을 정의하여야 한다.
+    // Jump -> Fall (AirSpeedY < 0f)
+    // Any State에서 출발한 애니메이션들 중 트리거로 동작하는 애니메이션들은 애니메이션 동작이 끝나면 Idle로 돌아간다. 그러나 다른 애니메이션들은 조건이 맞아야만 Idle로 돌아가는 애니메이션들도 있다. 그것들을 아래와 같이 정의한다.
+    // Idle_Block -> Idle (IdleBlock = false)
+    // WallSlide -> Idle (Grounded = true)
+    // WallSlide -> Idle (AirSpeedY > 0f)
+    // WallSlide 애니메이션의 트랜잭션은 2개로 2개의 조건 중 하나를 만족하면 Idle로 넘어간다.
+
+    // 각 상황에 맞는 설정해야 할 애니메이션 파라미터 값
+    // 벽에 붙은 경우 - Grounded = false, WallSlide = true, AirSpeedY < 0f
+    // 벽에서 떨어지는 경우(벽과 반대되는 방향 키 입력) - WallSlide = false, AirSpeedY = rigidbody y축 속도(Grounded는 착지를 했을 경우에만 변경)
+    // 벽 점프 - Jump 트리거, WallSlide = false, AirSpeedY = rigidbody y축 속도
 
     private void Update()
     {
