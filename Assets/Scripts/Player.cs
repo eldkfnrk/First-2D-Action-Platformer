@@ -26,8 +26,11 @@ public class Player : MonoBehaviour
 
     RaycastHit2D wallCheck;
     public bool isWall;
+    bool isWallSlide;
     bool isWallJump;
     float wallBoxDirection;
+
+    int jumpCnt;
 
     public float rollSpeed;
     public float rollDurationTime;  // 구르기 하는 시간
@@ -129,7 +132,6 @@ public class Player : MonoBehaviour
 
     // 각 상황에 맞는 설정해야 할 애니메이션 파라미터 값
     // 벽에 붙은 경우 - Grounded = false, WallSlide = true, AirSpeedY < 0f
-    // 벽에서 떨어지는 경우(벽과 반대되는 방향 키 입력) - WallSlide = false, AirSpeedY = rigidbody y축 속도(Grounded는 착지를 했을 경우에만 변경)
     // 벽 점프 - Jump 트리거, WallSlide = false, AirSpeedY = rigidbody y축 속도
 
     private void Update()
@@ -137,43 +139,7 @@ public class Player : MonoBehaviour
         if (isRoll || isAttack)
             return;
 
-        sightDirection = spriteR.flipX ? -1f : 1f;
-
-        // 벽에 붙어있을 때 불가능한 것
-        // 공격, 구르기, 방어
-        // 벽에 붙어 있어도 가능한 것
-        // 점프(대신 벽 점프라는 다른 기능으로 수행), 아래로 이동(벽에 붙어있을 때만 가능), 벽을 바라보고 있는 방향과 반대되는 방향 키 일정 시간 입력 시 벽에서 떨어지기
-
-        // 앞에 벽이 있는지 확인
-        wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, 0.5f, groundLayer);
-        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
-
-        if (isWall)
-        {
-            rigid.linearVelocityY = 0f;
-            if (wallCheck.collider == null || groundCheck.collider != null)  // 벽에 붙어있는데 앞에 벽이 없거나 바닥에 착지하고 있는 상태
-            {
-                // 착지 여부는 이곳이 아닌 아래에서 진행 - 왜냐하면 벽에서 떨어지는데 땅이 아닐 수도 있기 때문에 값을 바꿔버리면 문제가 발생할 수가 있어서이다.
-                isWall = false;
-                animator.SetBool("WallSlide", isWall);
-            }
-        }
-        // 벽에 붙는 조건
-        // 나의 진행 방향에 벽이 있다, 바닥에서 떨어져 있다, 구르지 않고 있다, 공격하지 않고 있다.
-        else
-        {
-            if (wallCheck.collider != null && groundCheck.collider == null)  // 벽에 붙어있지 않는 상태인데 앞에 벽이 있고 바닥에 착지하고 있지 않은 상태
-            {
-                isWall = true;
-                isGround = false;
-                animator.SetBool("WallSlide", isWall);
-                animator.SetBool("Grounded", isGround);
-                rigid.linearVelocityY = 0f;  // 벽에 붙으면 멈추도록 y축 속도를 0으로 고정시킨다.
-                animator.SetFloat("AirSpeedY", -0.1f);
-            }
-        }
-        
-        if(!isWall && !isGround && rigid.linearVelocityY < 0f)
+        if (!isGround)
         {
             if (groundCheck.collider != null)
             {
@@ -181,19 +147,26 @@ public class Player : MonoBehaviour
                 rigid.gravityScale = 1f;
                 animator.SetBool("Grounded", isGround);
                 animator.SetFloat("AirSpeedY", 0f);
-            }
-            else
-            {
-                rigid.gravityScale = fallSpeed;
-                animator.SetFloat("AirSpeedY", rigid.linearVelocityY);
+                jumpCnt = 0;
             }
         }
 
-        // 2026-06-01
-        // 벽에 붙는 것은 성공했으나 애니메이션 전환이 원할하지 않음. 벽에서 떨어지는 것이 무슨 이유에서인지 한 번 씩 안 되는 문제가 있음(이는 Update와 FixedUpdate, 이벤트 함수 호출이 어긋나기 때문으로 추정 중)
+        // 벽에 붙어있을 때 불가능한 것
+        // 공격, 구르기, 방어
+        // 벽에 붙어 있어도 가능한 것
+        // 점프(대신 벽 점프라는 다른 기능으로 수행), 아래로 이동(벽에 붙어있을 때만 가능), 벽을 바라보고 있는 방향과 반대되는 방향 키 일정 시간 입력 시 벽에서 떨어지기
 
-        // 현재 모든 문제가 정확히 파악 없이 진행되는 것에서 야기된 문제이기 때문에 먼저 애니메이션 파악과 벽에 붙어있을 때와 떨어져 있을 때를 구분하여 정확하게 판단하는 것을 우선으로 가지고 가야 뭔가가 이뤄질 것이다.
-        // 그럼에도 안 되었다면 아예 지식이 없는 상태인데 문제를 풀어보겠다는 것이기 때문에 계란으로 바위를 부수겠다는 행동이니 이를 지양하도록 검색과 AI를 활용한 해결을 진행하도록 할 것이다. 이는 1~2일 안에 결정하여야 한다.
+        if (isWall)
+        {
+            if (!isWallSlide)
+                rigid.linearVelocityY = 0f;
+            else
+                rigid.linearVelocityY = -2.3f;
+        }
+
+        // 2026-06-03
+        // 반대 방향키를 입력하면 튕겨나가는 기능 삭제. 벽 점프만 가능하도록 설정
+        // 점프 떨어질 때 중력 중가와 떨어지는 애니메이션으로 변하는 것이 제대로 동작하지 않고 있다. 수정 필요
 
         // 벽에 붙을 시 애니메이션 관련
         // 점프를 했을 수도 있으니 점프 여부 상관 없이 Grounded 파라미터 값을 true로 변환, 벽에 붙어 있는 것이기 때문에 WallSide 파라미터 값 true로 변환, 떨어지는 중이 아니기 때문에 AirSpeedY 파라미터 값을 0으로 변환
@@ -214,13 +187,54 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isRoll)
+        if (isRoll || isWallJump)
             return;
 
         if (isAttack)
         {
             rigid.linearVelocityX = 0f;
             return;
+        }
+
+        sightDirection = spriteR.flipX ? -1f : 1f;
+        
+        wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, 0.5f, groundLayer);  // 앞에 벽이 있는지 확인
+        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
+
+        if (!isWall)
+        {
+            // 벽에 붙는 조건
+            // 나의 진행 방향에 벽이 있다, 바닥에서 떨어져 있다, 구르지 않고 있다, 공격하지 않고 있다.
+            if (wallCheck.collider != null && groundCheck.collider == null)
+            {
+                isWall = true;
+                isGround = false;
+                animator.SetBool("WallSlide", isWall);
+                animator.SetBool("Grounded", isGround);
+                animator.SetFloat("AirSpeedY", -1f);
+                jumpCnt = 0;
+            }
+            else if (!isGround && rigid.linearVelocityY < 0f)
+            {
+                rigid.gravityScale = fallSpeed;
+                animator.SetFloat("AirSpeedY", -1f);
+            }
+        }
+        else
+        {
+            if (wallCheck.collider == null)  // 벽에 붙어있는데 앞에 벽이 없는 상태
+            {
+                isWall = false;
+                animator.SetBool("WallSlide", isWall);
+                animator.SetFloat("AirSpeedY", 0f);
+            }
+            else if(groundCheck.collider != null)  // 바닥에 착지하고 있는 상태
+            {
+                isWall = false;
+                isGround = true;
+                animator.SetBool("WallSlide", isWall);
+                animator.SetBool("Grounded", isGround);
+            }
         }
 
         rigid.linearVelocityX = direction * moveSpeed;
@@ -237,28 +251,32 @@ public class Player : MonoBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (isWallJump)
+            return;
+
         direction = context.ReadValue<Vector2>().x;
 
-        if (direction > 0f)
-            direction = 1f;
-        else if (direction < 0f)
-            direction = -1f;
-
-        if (isWall && direction != sightDirection)  // 벽에 붙어있는 상황에서 벽의 방향과 반대 방향 키 입력 시
-        {
-            
-        }
-
         // 주의점 - 벽에 붙어있을 때는 벽에 딱 달라붙어 있고 아래 키 입력은 밑으로 느리게 내려가도록 한다. 벽을 타고 오르는 것은 허락하지 않는다.
-        if (isWall && context.ReadValue<Vector2>().y < 0f)
+        if (isWall)
         {
-            
+            direction = 0f;
+            if (context.ReadValue<Vector2>().y < 0f)
+                isWallSlide = true;
+            else
+                isWallSlide = false;
+        }
+        else
+        {
+            if (direction > 0f)
+                direction = 1f;
+            else if (direction < 0f)
+                direction = -1f;
         }
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (isRoll || isAttack)
+        if (isRoll || isAttack || isWallJump || jumpCnt == 1)
             return;
 
         if (context.started)
@@ -269,7 +287,7 @@ public class Player : MonoBehaviour
             // 벽과 반대되는 방향으로 살짝 튕겨 나가면서 위로 점프
             if (isWall)
             {
-                
+                StartCoroutine(WallJumpRoutine());
             }
             else if (isGround)
             {
@@ -278,13 +296,32 @@ public class Player : MonoBehaviour
                 animator.SetBool("Grounded", isGround);
                 animator.SetTrigger("Jump");
                 rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+                ++jumpCnt;
             }
         }
     }
 
+    IEnumerator WallJumpRoutine()
+    {
+        isWallJump = true;
+        isWall = false;
+        isGround = false;
+
+        rigid.AddForce(new Vector2(sightDirection * -2f, jumpPower), ForceMode2D.Impulse);
+
+        animator.SetBool("WallSlide", isWall);
+        animator.SetBool("Grounded", isGround);
+        animator.SetTrigger("Jump");
+        ++jumpCnt;
+
+        yield return new WaitForSeconds(0.15f);
+
+        isWallJump = false;
+    }
+
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (isWall)
+        if (isWall || isWallJump)
             return;
 
         // J키 입력 - 첫 번째 공격
@@ -367,6 +404,9 @@ public class Player : MonoBehaviour
 
     public void OnRoll(InputAction.CallbackContext context)
     {
+        if (isWallJump)
+            return;
+
         if (canRoll && isGround)
         {
             StartCoroutine(RollRoutine());
@@ -413,7 +453,7 @@ public class Player : MonoBehaviour
 
     public void OnBlock(InputAction.CallbackContext context)
     {
-        if (isWall)
+        if (isWall || !isGround || isWallJump)
             return;
 
         if (context.started)
