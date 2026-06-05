@@ -5,6 +5,23 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
+    enum PlayerState
+    {
+        // 플레이어의 상태는 애니메이션의 이름을 차용
+        Idle,
+        Run,
+        Jump,
+        Fall,
+        Block,
+        Attack,
+        Roll,
+        WallSlide,
+        Hurt,
+        Death,
+    }
+
+    PlayerState currentState;
+
     float moveSpeed;
     public float defaultMoveSpeed;
     public float blockMoveSpeed;
@@ -79,7 +96,13 @@ public class Player : MonoBehaviour
         rollCool = new WaitForSeconds(rollCoolTime - rollDurationTime);
         attackDelay = new WaitForSeconds(0.42f);
         animator.SetBool("Grounded", isGround);
+
+        currentState = PlayerState.Idle;
     }
+
+    // 지금까지의 문제 해결을 위한 AI 질의응답에서 가져온 방법
+    // 지금까지 FSM은 AI를 설계하는데 사용되는 개념이지 플레이어에 적용할 생각을 못했는데 AI와의 질의응답을 통해서 플레이어에게도 FSM 즉, 상태를 주고 관리하는 형태를 취하는 것이 가능하고 오히려 그게 스탠다드하고 정확하게 관리할 수 있는 것이라는 말이었다.
+    // 그래서 플레이어에게 상태를 부여하고 이걸 관리하는 것으로 가보려 한다.
 
     // 벽에 붙은 것으로 인식하는 조건
     // 1. 플레이어와 바닥 간 일정 거리 이상 떨어져 있다.
@@ -136,6 +159,27 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        // 애니메이션 상태 제어는 Update에서 진행하여야 부드럽게 변경이 가능하다.
+
+        // 애니메이션 관리
+        switch (currentState)
+        {
+            case PlayerState.Idle:
+                animator.SetInteger("AnimState", 0);
+                break;
+            case PlayerState.Run:
+                animator.SetInteger("AnimState", 1);
+                break;
+            case PlayerState.Jump:
+                animator.SetTrigger("Jump");
+                animator.SetBool("Grounded", isGround);
+                break;
+            case PlayerState.Fall:
+                break;
+            case PlayerState.Attack:
+                break;
+        }
+
         if (isRoll || isAttack)
             return;
 
@@ -187,6 +231,30 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 캐릭터가 현재 바라보고 있는 방향
+        sightDirection = spriteR.flipX ? -1f : 1f;
+
+        // 벽과 바닥 확인
+        wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, 0.5f, groundLayer);  // 앞에 벽이 있는지 확인
+        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
+
+        // 이동
+        rigid.linearVelocityX = direction * moveSpeed;
+
+        // 떨어지고 있는지 확인 - 착지한 상태가 아니면서 떨어지고 있는 경우 확인
+        if(!isGround && rigid.linearVelocityY < 0f)
+        {
+            rigid.gravityScale = fallSpeed;
+            currentState = PlayerState.Fall;
+        }
+
+        // 땅에 착지한 경우
+        if(!isGround && groundCheck.collider != null)
+        {
+
+        }
+        
+
         if (isRoll || isWallJump)
             return;
 
@@ -195,11 +263,7 @@ public class Player : MonoBehaviour
             rigid.linearVelocityX = 0f;
             return;
         }
-
-        sightDirection = spriteR.flipX ? -1f : 1f;
         
-        wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, 0.5f, groundLayer);  // 앞에 벽이 있는지 확인
-        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
 
         if (!isWall)
         {
@@ -236,42 +300,27 @@ public class Player : MonoBehaviour
                 animator.SetBool("Grounded", isGround);
             }
         }
-
-        rigid.linearVelocityX = direction * moveSpeed;
-
-        if (direction != 0f)
-        {
-            animator.SetInteger("AnimState", 1);
-        }
-        else
-        {
-            animator.SetInteger("AnimState", 0);
-        }
     }
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (isWallJump)
-            return;
-
+        // 이동 값은 계속해서 입력받되 상태가 점프이면 상태 전환은 막도록 한다.(막아야 할 상태가 더욱 늘어날 수 있다.)
         direction = context.ReadValue<Vector2>().x;
 
+        if (currentState == PlayerState.Jump)
+            return;
+
+        if (context.started || context.performed)
+        {
+            currentState = PlayerState.Run;
+        }
+        else if (currentState == PlayerState.Run && context.canceled)
+        {
+            currentState = PlayerState.Idle;
+        }
+
         // 주의점 - 벽에 붙어있을 때는 벽에 딱 달라붙어 있고 아래 키 입력은 밑으로 느리게 내려가도록 한다. 벽을 타고 오르는 것은 허락하지 않는다.
-        if (isWall)
-        {
-            direction = 0f;
-            if (context.ReadValue<Vector2>().y < 0f)
-                isWallSlide = true;
-            else
-                isWallSlide = false;
-        }
-        else
-        {
-            if (direction > 0f)
-                direction = 1f;
-            else if (direction < 0f)
-                direction = -1f;
-        }
+        
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -279,25 +328,18 @@ public class Player : MonoBehaviour
         if (isRoll || isAttack || isWallJump || jumpCnt == 1)
             return;
 
+        // 점프
         if (context.started)
         {
+            rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+            isGround = !isGround;
+            rigid.gravityScale = 1f;
+            currentState = PlayerState.Jump;
+            ++jumpCnt;
             // 벽 점프의 조건
             // 벽에 붙어있는 중, 점프 키 입력
             // 벽 점프 동작
             // 벽과 반대되는 방향으로 살짝 튕겨 나가면서 위로 점프
-            if (isWall)
-            {
-                StartCoroutine(WallJumpRoutine());
-            }
-            else if (isGround)
-            {
-                isGround = !isGround;
-                rigid.gravityScale = 1f;
-                animator.SetBool("Grounded", isGround);
-                animator.SetTrigger("Jump");
-                rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
-                ++jumpCnt;
-            }
         }
     }
 
@@ -321,6 +363,7 @@ public class Player : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
+        // 공격
         if (isWall || isWallJump)
             return;
 
@@ -343,6 +386,7 @@ public class Player : MonoBehaviour
     IEnumerator AttackRoutine()
     {
         isAttack = true;
+        currentState = PlayerState.Attack;
         attackBoxPosition.x = transform.position.x + attackBoxDirection;
         attackBoxPosition.y = transform.position.y;
         attackState = AttackState.Attack1;
@@ -358,7 +402,6 @@ public class Player : MonoBehaviour
             attackCount = 0;
             m_Started = false;
             isAttack = false;
-            StopCoroutine(AttackRoutine());
         }
 
         if (attackCount >= 2)
@@ -379,6 +422,7 @@ public class Player : MonoBehaviour
         m_Started = false;
 
         isAttack = false;
+        currentState = PlayerState.Idle;
     }
 
     void AttackEnemy()
