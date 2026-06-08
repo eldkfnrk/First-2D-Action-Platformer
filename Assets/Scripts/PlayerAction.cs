@@ -20,6 +20,16 @@ public class PlayerAction : MonoBehaviour
 
     public PlayerState playerState;
 
+    public enum AttackState
+    {
+        Attack1,
+        Attack2,
+        Attack3,
+        None,
+    }
+
+    public AttackState attackState;
+
     // 바닥, 벽 등의 충돌체 체크
     RaycastHit2D groundCheck;
     RaycastHit2D wallCheck;
@@ -33,11 +43,12 @@ public class PlayerAction : MonoBehaviour
     public float jumpPower;
     public bool isJump;
     public bool isGround;
-    int jumpCnt;
+    public float jumpTimer;  // 점프 후 잠시 동안 바닥 검사를 하지 않는 시간
+    public float fallSpeed;
 
     // 공격
     public bool isAttack;
-    int attackCnt;
+    public int attackCnt;
     WaitForSeconds attackDelay;
     public float attackDelayData;
 
@@ -59,6 +70,7 @@ public class PlayerAction : MonoBehaviour
     private void Awake()
     {
         playerState = PlayerState.Idle;
+        attackState = AttackState.None;
         attackDelay = new WaitForSeconds(attackDelayData);
         rollDuration = new WaitForSeconds(rollDurationData);
         rollCoolTime = new WaitForSeconds(rollCoolTimeData - rollDurationData);
@@ -76,14 +88,18 @@ public class PlayerAction : MonoBehaviour
 
     private void FixedUpdate()
     {
-        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 1f, groundLayer);
+        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
 
         rigid.linearVelocityX = moveDirection * moveSpeed;
 
         switch (playerState)
         {
+            case PlayerState.Idle:
+                // 이동 키가 입력되어 있는데도 움직이는 상태로 변하지 않는 경우를 위한 조건문
+                if (moveDirection != 0f)
+                    playerState = PlayerState.Run;
+                break;
             case PlayerState.Attack:
-            case PlayerState.Roll:
             case PlayerState.Hurt:
             case PlayerState.Death:
             case PlayerState.Block:
@@ -94,26 +110,39 @@ public class PlayerAction : MonoBehaviour
                     playerState = PlayerState.Idle;
                 break;
             case PlayerState.Jump:
+                // 0.25초 동안 바닥 체크 x -> 빠른 바닥 체크로 점프 하자마자 착지된 것으로 판정되는 문제를 해결
+                jumpTimer += Time.fixedDeltaTime;
+                if (jumpTimer < 0.25f)
+                    break;
+                
                 if (rigid.linearVelocityY < 0f)
+                {
+                    jumpTimer = 0f;
                     playerState = PlayerState.Fall;
+                }
+                else if (groundCheck.collider != null)
+                {
+                    isGround = true;
+                    isJump = false;
+                    jumpTimer = 0f;
+                    playerState = PlayerState.Idle;
+                }
                 break;
             case PlayerState.Fall:
+                if (rigid.gravityScale == 1f)
+                {
+                    rigid.gravityScale = fallSpeed;
+                }
+
                 if (groundCheck.collider != null)
                 {
                     isGround = true;
                     isJump = false;
-                    jumpCnt = 0;
-
-                    if (moveDirection != 0f)
-                        playerState = PlayerState.Run;
-                    else
-                        playerState = PlayerState.Idle;
+                    rigid.gravityScale = 1f;
+                    playerState = PlayerState.Idle;
                 }
                 break;
         }
-
-        // 6-7
-        // 점프를 몇 번 하면 다시 점프가 안 되거나 특정 경우 애니메이션 전환이 원할히 되지 않는 문제가 발생
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -122,12 +151,7 @@ public class PlayerAction : MonoBehaviour
         // 상태가 Idle일 때는 상태 전환
         // 상태가 Jump 혹은 Fall일 때는 전환x
         // 상태가 Attack, Roll, Hurt, Death, Block일 경우에는 이동 불가
-        // 상태가 WallSlide일 때는 아래로 이동하는 값만 획득, 좌우 이동 불가
-        if(context.started || playerState == PlayerState.Idle)
-        {
-            playerState = PlayerState.Run;
-        }
-        
+        // 상태가 WallSlide일 때는 아래로 이동하는 값만 획득, 좌우 이동 불가        
         moveDirection = context.ReadValue<Vector2>().x;
         if (moveDirection > 0f)
             moveDirection = 1f;
@@ -141,7 +165,7 @@ public class PlayerAction : MonoBehaviour
         // 어느 상태에서든 동작
         // 상태가 Attack, Roll, Hurt, Death일 경우에는 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
-        if (isJump || jumpCnt == 1)
+        if (isJump)
             return;
 
         if (context.started)
@@ -149,7 +173,6 @@ public class PlayerAction : MonoBehaviour
             rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
             isGround = false;
             isJump = true;
-            ++jumpCnt;
             playerState = PlayerState.Jump;
         }
     }
@@ -159,6 +182,48 @@ public class PlayerAction : MonoBehaviour
         // 공격 - 최대 3회까지 연속 공격 가능
         // 상태가 Jump, Roll, WallSlide일 경우 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
+        if (context.started)
+        {
+            if (attackCnt == 0)
+            {
+                ++attackCnt;
+                StartCoroutine(AttackRoutine());
+            }
+            else if (attackCnt <= 2)
+            {
+                ++attackCnt;
+            }
+        }
+    }
+
+    IEnumerator AttackRoutine()
+    {
+        isAttack = true;
+        playerState = PlayerState.Attack;
+        attackState = AttackState.Attack1;
+        // overlapbox 위치 지정
+        // 적 공격(overlapbox 안에 적이 있었다면 그 적은 데미지를 입도록 함수 하나 생성 필요)
+
+        yield return attackDelay;
+
+        if(attackCnt >= 2)
+        {
+            attackState = AttackState.Attack2;
+            // 적 공격(만든 함수 재활용)
+            yield return attackDelay;
+        }
+
+        if (attackCnt == 3)
+        {
+            attackState = AttackState.Attack3;
+            // 적 공격(만든 함수 재활용)
+            yield return attackDelay;
+        }
+
+        isAttack = false;
+        attackCnt = 0;
+        playerState = PlayerState.Idle;
+        attackState = AttackState.None;
     }
 
     public void OnRoll(InputAction.CallbackContext context)
@@ -178,6 +243,6 @@ public class PlayerAction : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawRay(transform.position, Vector2.down * 1f);
+        Gizmos.DrawRay(transform.position, Vector2.down * 0.9f);
     }
 }
