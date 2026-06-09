@@ -409,15 +409,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   playerState: 0
+  attackState: 0
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 0
   moveSpeed: 5
   moveDirection: 0
   jumpPower: 10
   isJump: 0
   isGround: 0
+  jumpTimer: 0
+  fallSpeed: 2.5
   isAttack: 0
+  attackCnt: 0
+  attackBoxSize: {x: 0, y: 0}
   attackDelayData: 0.5
   isRoll: 0
   canRoll: 0
@@ -769,6 +777,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa70cdd147ad94d41ac6b792beb667f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimation
+  attackDelayTime: 0.5
 --- !u!1 &1317660884
 GameObject:
   m_ObjectHideFlags: 0

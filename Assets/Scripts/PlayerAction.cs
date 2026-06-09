@@ -18,8 +18,6 @@ public class PlayerAction : MonoBehaviour
         Death,
     }
 
-    public PlayerState playerState;
-
     public enum AttackState
     {
         Attack1,
@@ -28,12 +26,16 @@ public class PlayerAction : MonoBehaviour
         None,
     }
 
+    // 플레이어 정보
+    public PlayerState playerState;
     public AttackState attackState;
+    float sightDirection;  // 플레이어가 바라보고 있는 방향(1이면 오른쪽, -1이면 왼쪽을 바라보고 있는 것)
 
     // 바닥, 벽 등의 충돌체 체크
     RaycastHit2D groundCheck;
     RaycastHit2D wallCheck;
     public LayerMask groundLayer;
+    public LayerMask enemyLayer;
 
     // 좌우 이동
     public float moveSpeed;
@@ -49,6 +51,8 @@ public class PlayerAction : MonoBehaviour
     // 공격
     public bool isAttack;
     public int attackCnt;
+    Vector2 attackBoxPos;
+    public Vector2 attackBoxSize;
     WaitForSeconds attackDelay;
     public float attackDelayData;
 
@@ -76,6 +80,11 @@ public class PlayerAction : MonoBehaviour
         rollCoolTime = new WaitForSeconds(rollCoolTimeData - rollDurationData);
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
+    }
+
+    private void Update()
+    {
+        sightDirection = spriteR.flipX ? -1f : 1f;
     }
 
     private void LateUpdate()
@@ -202,21 +211,23 @@ public class PlayerAction : MonoBehaviour
         playerState = PlayerState.Attack;
         attackState = AttackState.Attack1;
         // overlapbox 위치 지정
-        // 적 공격(overlapbox 안에 적이 있었다면 그 적은 데미지를 입도록 함수 하나 생성 필요)
+        attackBoxPos.x = transform.position.x + sightDirection;
+        attackBoxPos.y = transform.position.y;
+        EnemyAttack();  
 
         yield return attackDelay;
 
         if(attackCnt >= 2)
         {
             attackState = AttackState.Attack2;
-            // 적 공격(만든 함수 재활용)
+            EnemyAttack();
             yield return attackDelay;
         }
 
         if (attackCnt == 3)
         {
             attackState = AttackState.Attack3;
-            // 적 공격(만든 함수 재활용)
+            EnemyAttack();
             yield return attackDelay;
         }
 
@@ -224,6 +235,19 @@ public class PlayerAction : MonoBehaviour
         attackCnt = 0;
         playerState = PlayerState.Idle;
         attackState = AttackState.None;
+    }
+
+    void EnemyAttack()
+    {
+        // 적 공격
+        // overlapbox 이용
+        // 공격 시 overlapbox를 활성화하여 그 안에 있는 적들을 공격
+        Collider2D hitEnemy = Physics2D.OverlapBox(attackBoxPos, attackBoxSize, 0f, enemyLayer);
+
+        if(hitEnemy != null)
+        {
+            // 적에게 데미지를 주는 동작 수행
+        }
     }
 
     public void OnRoll(InputAction.CallbackContext context)

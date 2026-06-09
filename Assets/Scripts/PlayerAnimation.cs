@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
@@ -5,11 +6,17 @@ public class PlayerAnimation : MonoBehaviour
     Animator animator;
     PlayerAction playerAction;
 
+    bool playingAttackAnimation;
+
+    public float attackDelayTime;
+    WaitForSeconds attackDelay;
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
         playerAction = GetComponent<PlayerAction>();
         animator.SetBool("Grounded", true);
+        attackDelay = new WaitForSeconds(attackDelayTime);
     }
 
     void Update()
@@ -39,14 +46,40 @@ public class PlayerAnimation : MonoBehaviour
                 animator.SetFloat("AirSpeedY", -1f);
                 break;
             case PlayerAction.PlayerState.Attack:
-                //if(playerAction.attackState == PlayerAction.AttackState.Attack1 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack1"))
-                //    animator.SetTrigger("Attack1");
-                //else if(playerAction.attackState == PlayerAction.AttackState.Attack2 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack2"))
-                //    animator.SetTrigger("Attack2");
-                //else if (playerAction.attackState == PlayerAction.AttackState.Attack3 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack3"))
-                //    animator.SetTrigger("Attack3");
-                // 공격 애니메이션이 원할히 동작하지 않고 있음. 해결 요망
+                if (!playingAttackAnimation)
+                {
+                    StartCoroutine(AttackAnimationRoutine());
+                }
                 break;
         }
+    }
+
+    IEnumerator AttackAnimationRoutine()
+    {
+        playingAttackAnimation = true;
+
+        //if(playerAction.attackState == PlayerAction.AttackState.Attack1 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack1"))
+        //    animator.SetTrigger("Attack1");
+        //else if(playerAction.attackState == PlayerAction.AttackState.Attack2 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack2"))
+        //    animator.SetTrigger("Attack2");
+        //else if (playerAction.attackState == PlayerAction.AttackState.Attack3 && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack3"))
+        //    animator.SetTrigger("Attack3");
+        animator.SetTrigger("Attack1");
+
+        yield return attackDelay;
+
+        if (playerAction.attackState == PlayerAction.AttackState.Attack2)
+        {
+            animator.SetTrigger("Attack2");
+            yield return attackDelay;
+        }
+
+        if (playerAction.attackState == PlayerAction.AttackState.Attack3)
+        {
+            animator.SetTrigger("Attack3");
+            yield return attackDelay;
+        }
+
+        playingAttackAnimation = false;
     }
 }
