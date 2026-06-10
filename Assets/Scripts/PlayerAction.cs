@@ -59,6 +59,7 @@ public class PlayerAction : MonoBehaviour
     // 구르기
     public bool isRoll;
     public bool canRoll;
+    public float rollSpeed;
     WaitForSeconds rollDuration;
     public float rollDurationData;
     WaitForSeconds rollCoolTime;
@@ -70,16 +71,19 @@ public class PlayerAction : MonoBehaviour
     // 컴포넌트
     Rigidbody2D rigid;
     SpriteRenderer spriteR;
+    CapsuleCollider2D coll;
 
     private void Awake()
     {
         playerState = PlayerState.Idle;
         attackState = AttackState.None;
+        canRoll = true;
         attackDelay = new WaitForSeconds(attackDelayData);
         rollDuration = new WaitForSeconds(rollDurationData);
         rollCoolTime = new WaitForSeconds(rollCoolTimeData - rollDurationData);
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
+        coll = GetComponent<CapsuleCollider2D>();
     }
 
     private void Update()
@@ -107,6 +111,9 @@ public class PlayerAction : MonoBehaviour
                 // 이동 키가 입력되어 있는데도 움직이는 상태로 변하지 않는 경우를 위한 조건문
                 if (moveDirection != 0f)
                     playerState = PlayerState.Run;
+                break;
+            case PlayerState.Roll:
+                rigid.linearVelocityX = rollSpeed * sightDirection;
                 break;
             case PlayerState.Attack:
             case PlayerState.Hurt:
@@ -160,12 +167,20 @@ public class PlayerAction : MonoBehaviour
         // 상태가 Idle일 때는 상태 전환
         // 상태가 Jump 혹은 Fall일 때는 전환x
         // 상태가 Attack, Roll, Hurt, Death, Block일 경우에는 이동 불가
-        // 상태가 WallSlide일 때는 아래로 이동하는 값만 획득, 좌우 이동 불가        
+        // 상태가 WallSlide일 때는 아래로 이동하는 값만 획득, 좌우 이동 불가
         moveDirection = context.ReadValue<Vector2>().x;
         if (moveDirection > 0f)
             moveDirection = 1f;
         else if (moveDirection < 0f)
             moveDirection = -1f;
+
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Attack:
+                moveDirection = 0f;
+                break;
+        }
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -174,6 +189,18 @@ public class PlayerAction : MonoBehaviour
         // 어느 상태에서든 동작
         // 상태가 Attack, Roll, Hurt, Death일 경우에는 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Attack:
+            case PlayerState.Hurt:
+            case PlayerState.Death:
+            case PlayerState.Fall:
+                return;
+            case PlayerState.Block:
+                break;
+        }
+
         if (isJump)
             return;
 
@@ -191,6 +218,18 @@ public class PlayerAction : MonoBehaviour
         // 공격 - 최대 3회까지 연속 공격 가능
         // 상태가 Jump, Roll, WallSlide일 경우 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Jump:
+            case PlayerState.Hurt:
+            case PlayerState.Death:
+            case PlayerState.Fall:
+                return;
+            case PlayerState.Block:
+                break;
+        }
+
         if (context.started)
         {
             if (attackCnt == 0)
@@ -256,6 +295,41 @@ public class PlayerAction : MonoBehaviour
         // 상태가 Jump, WallSlide일 때 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
         // 공격 중일 경우 해당 공격을 중지하고 변경되었던 값들을 원상태로 수정
+        switch (playerState)
+        {
+            case PlayerState.Jump:
+            case PlayerState.Attack:
+            case PlayerState.Hurt:
+            case PlayerState.Death:
+            case PlayerState.Fall:
+                return;
+            case PlayerState.Block:
+                break;
+        }
+
+        if (!isRoll && canRoll)
+            StartCoroutine(RollRoutine());
+    }
+
+    IEnumerator RollRoutine()
+    {
+        isRoll = true;
+        canRoll = false;
+        rigid.gravityScale = 0f;
+        rigid.linearVelocityX = rollSpeed * sightDirection;
+        coll.enabled = false;
+        playerState = PlayerState.Roll;
+
+        yield return rollDuration;
+
+        isRoll = false;
+        rigid.gravityScale = 1f;
+        coll.enabled = true;
+        playerState = PlayerState.Idle;
+
+        yield return rollCoolTime;
+
+        canRoll = true;
     }
 
     public void OnBlock(InputAction.CallbackContext context)

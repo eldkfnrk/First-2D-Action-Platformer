@@ -429,6 +429,7 @@ MonoBehaviour:
   attackDelayData: 0.5
   isRoll: 0
   canRoll: 0
+  rollSpeed: 10
   rollDurationData: 0.5
   rollCoolTimeData: 1
   isBlock: 0
