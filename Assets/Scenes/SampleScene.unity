@@ -410,12 +410,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player
   playerState: 0
   attackState: 0
+  groundCheckDistance: 0.9
+  wallCheckDistance: 0.4
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
   enemyLayer:
     serializedVersion: 2
     m_Bits: 0
+  slideSpeed: 0.4
+  pressedSlide: 5
+  isWall: 0
   moveSpeed: 5
   moveDirection: 0
   jumpPower: 10

@@ -32,6 +32,8 @@ public class PlayerAnimation : MonoBehaviour
                 animator.SetInteger("AnimState", 0);
                 animator.SetFloat("AirSpeedY", 0f);  // 이 파라미터 값을 바꿔주지 않으면 계속하여 해당 파라미터 값이 -1f인 상황이 되고 그러면 점프 애니메이션이 꼬이는 문제가 발생한다.
                 animator.SetBool("Grounded", true);
+                animator.SetBool("IdleBlock", false);
+                animator.SetBool("WallSlide", false);
                 break;
             case PlayerAction.PlayerState.Run:
                 animator.SetInteger("AnimState", 1);
@@ -54,9 +56,20 @@ public class PlayerAnimation : MonoBehaviour
                 if (!playingAttackAnimation)
                     StartCoroutine(AttackAnimationRoutine());
                 break;
-            case PlayerState.Roll:
+            case PlayerAction.PlayerState.Roll:
                 if (!curAnimatorState.IsName("Roll"))
                     animator.SetTrigger("Roll");
+                break;
+            case PlayerAction.PlayerState.Block:
+                animator.SetBool("IdleBlock", true);
+                break;
+            case PlayerAction.PlayerState.WallSlide:
+                if (!curAnimatorState.IsName("WallSlide"))
+                {
+                    animator.SetBool("WallSlide", true);
+                    animator.SetBool("Grounded", false);
+                    animator.SetFloat("AirSpeedY", -1f);
+                }
                 break;
         }
     }

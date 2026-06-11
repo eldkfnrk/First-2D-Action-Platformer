@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -34,8 +35,16 @@ public class PlayerAction : MonoBehaviour
     // 바닥, 벽 등의 충돌체 체크
     RaycastHit2D groundCheck;
     RaycastHit2D wallCheck;
+    public float groundCheckDistance;
+    public float wallCheckDistance;
     public LayerMask groundLayer;
     public LayerMask enemyLayer;
+
+    // 벽에 붙었을 때 행동
+    public float slideSpeed;
+    float slideValue;  // 입력 여부에 따른 값을 적용시킬 변수
+    public float pressedSlide;  // 아래 방향 키를 입력하면 slideSpeed 속도가 이 수치만큼 배가 되어 빨라지도록 설정할 예정
+    public bool isWall;
 
     // 좌우 이동
     public float moveSpeed;
@@ -93,6 +102,9 @@ public class PlayerAction : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (isWall)
+            return;
+
         if (moveDirection > 0f)
             spriteR.flipX = false;
         else if (moveDirection < 0f)
@@ -101,7 +113,16 @@ public class PlayerAction : MonoBehaviour
 
     private void FixedUpdate()
     {
-        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, 0.9f, groundLayer);
+        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
+        wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, wallCheckDistance, groundLayer);
+
+        if(groundCheck.collider == null && wallCheck.collider != null)
+        {
+            isGround = true;
+            isJump = false;
+            isWall = true;
+            playerState = PlayerState.WallSlide;
+        }
 
         rigid.linearVelocityX = moveDirection * moveSpeed;
 
@@ -111,6 +132,13 @@ public class PlayerAction : MonoBehaviour
                 // 이동 키가 입력되어 있는데도 움직이는 상태로 변하지 않는 경우를 위한 조건문
                 if (moveDirection != 0f)
                     playerState = PlayerState.Run;
+
+                if (groundCheck.collider == null)
+                {
+                    isGround = false;
+                    isJump = true;
+                    playerState = PlayerState.Fall;
+                }
                 break;
             case PlayerState.Roll:
                 rigid.linearVelocityX = rollSpeed * sightDirection;
@@ -121,9 +149,27 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Block:
                 rigid.linearVelocityX = 0f;
                 break;
+            case PlayerState.WallSlide:
+                rigid.gravityScale = 1f;
+                rigid.linearVelocityX = 0f;
+                rigid.linearVelocityY = (-1f) * slideSpeed * slideValue;  // 밑으로 하강하려면 속도는 -여야 하기 때문에 -1f를 곱하였다.
+
+                if(groundCheck.collider != null)
+                {
+                    isWall = false;
+                    playerState = PlayerState.Idle;
+                }
+                break;
             case PlayerState.Run:
                 if (moveDirection == 0f)
                     playerState = PlayerState.Idle;
+
+                if (groundCheck.collider == null)
+                {
+                    isGround = false;
+                    isJump = true;
+                    playerState = PlayerState.Fall;
+                }
                 break;
             case PlayerState.Jump:
                 // 0.25초 동안 바닥 체크 x -> 빠른 바닥 체크로 점프 하자마자 착지된 것으로 판정되는 문제를 해결
@@ -180,6 +226,9 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Attack:
                 moveDirection = 0f;
                 break;
+            case PlayerState.WallSlide:
+                slideValue = context.ReadValue<Vector2>().y < 0f ? pressedSlide : 1f;
+                break;
         }
     }
 
@@ -198,6 +247,7 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Fall:
                 return;
             case PlayerState.Block:
+                isBlock = false;
                 break;
         }
 
@@ -206,6 +256,7 @@ public class PlayerAction : MonoBehaviour
 
         if (context.started)
         {
+            rigid.gravityScale = 1f;
             rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
             isGround = false;
             isJump = true;
@@ -227,6 +278,7 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Fall:
                 return;
             case PlayerState.Block:
+                isBlock = false;
                 break;
         }
 
@@ -304,6 +356,7 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Fall:
                 return;
             case PlayerState.Block:
+                isBlock = false;
                 break;
         }
 
@@ -337,6 +390,27 @@ public class PlayerAction : MonoBehaviour
         // 방어
         // 상태가 Jump, WallSlide, Fall, Hurt, Death일 경우 불가
         // 움직이고 있었던 경우에는 즉시 그 자리에서 멈추고 방어 태세로 전환
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Attack:
+            case PlayerState.Hurt:
+            case PlayerState.Death:
+            case PlayerState.Fall:
+            case PlayerState.Jump:
+                return;
+        }
+
+        if (context.canceled)
+        {
+            isBlock = false;
+            playerState = PlayerState.Idle;
+        }
+        else
+        {
+            isBlock = true;
+            playerState = PlayerState.Block;
+        }
     }
 
     private void OnDrawGizmos()
