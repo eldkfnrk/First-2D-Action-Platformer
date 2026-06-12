@@ -408,6 +408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53f10b983ba066e43981144656a5bcbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
+  canInput: 0
   playerState: 0
   attackState: 0
   groundCheckDistance: 0.9
@@ -421,6 +422,7 @@ MonoBehaviour:
   slideSpeed: 0.4
   pressedSlide: 5
   isWall: 0
+  wallJumpDelayTime: 0.2
   moveSpeed: 5
   moveDirection: 0
   jumpPower: 10

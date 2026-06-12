@@ -27,6 +27,8 @@ public class PlayerAction : MonoBehaviour
         None,
     }
 
+    public bool canInput;  // 입력 가능 여부를 저장하는 변수(입력을 막아야 하는 경우 사용을 위한 변수)
+
     // 플레이어 정보
     public PlayerState playerState;
     public AttackState attackState;
@@ -45,6 +47,8 @@ public class PlayerAction : MonoBehaviour
     float slideValue;  // 입력 여부에 따른 값을 적용시킬 변수
     public float pressedSlide;  // 아래 방향 키를 입력하면 slideSpeed 속도가 이 수치만큼 배가 되어 빨라지도록 설정할 예정
     public bool isWall;
+    public float wallJumpDelayTime;
+    WaitForSeconds wallJumpDelay;
 
     // 좌우 이동
     public float moveSpeed;
@@ -87,9 +91,11 @@ public class PlayerAction : MonoBehaviour
         playerState = PlayerState.Idle;
         attackState = AttackState.None;
         canRoll = true;
+        canInput = true;
         attackDelay = new WaitForSeconds(attackDelayData);
         rollDuration = new WaitForSeconds(rollDurationData);
         rollCoolTime = new WaitForSeconds(rollCoolTimeData - rollDurationData);
+        wallJumpDelay = new WaitForSeconds(wallJumpDelayTime);
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
         coll = GetComponent<CapsuleCollider2D>();
@@ -102,7 +108,7 @@ public class PlayerAction : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (isWall)
+        if (isWall || !canInput)
             return;
 
         if (moveDirection > 0f)
@@ -113,12 +119,15 @@ public class PlayerAction : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!canInput)
+            return;
+
         groundCheck = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
         wallCheck = Physics2D.Raycast(transform.position, Vector2.right * sightDirection, wallCheckDistance, groundLayer);
 
         if(groundCheck.collider == null && wallCheck.collider != null)
         {
-            isGround = true;
+            isGround = false;
             isJump = false;
             isWall = true;
             playerState = PlayerState.WallSlide;
@@ -150,6 +159,8 @@ public class PlayerAction : MonoBehaviour
                 rigid.linearVelocityX = 0f;
                 break;
             case PlayerState.WallSlide:
+                // 점프를 뛰고 나서 착지를 하지 않고 벽에 붙은 경우 이 점프 바닥 체크를 하지 못하도록 막은 타이머가 초기화가 되지 않아서 벽에 붙었다가 착지한 이후에 점프를 하면 점프를 제대로 뛰지도 못하고 상태 전환도 원할히 이뤄지지 못하였었기에 이렇게 따로 리셋을 시켜준다.
+                jumpTimer = 0f;  
                 rigid.gravityScale = 1f;
                 rigid.linearVelocityX = 0f;
                 rigid.linearVelocityY = (-1f) * slideSpeed * slideValue;  // 밑으로 하강하려면 속도는 -여야 하기 때문에 -1f를 곱하였다.
@@ -157,6 +168,7 @@ public class PlayerAction : MonoBehaviour
                 if(groundCheck.collider != null)
                 {
                     isWall = false;
+                    isGround = true;
                     playerState = PlayerState.Idle;
                 }
                 break;
@@ -176,7 +188,7 @@ public class PlayerAction : MonoBehaviour
                 jumpTimer += Time.fixedDeltaTime;
                 if (jumpTimer < 0.25f)
                     break;
-                
+
                 if (rigid.linearVelocityY < 0f)
                 {
                     jumpTimer = 0f;
@@ -209,6 +221,9 @@ public class PlayerAction : MonoBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (!canInput)
+            return;
+
         // 이동 방향 값 획득
         // 상태가 Idle일 때는 상태 전환
         // 상태가 Jump 혹은 Fall일 때는 전환x
@@ -251,21 +266,47 @@ public class PlayerAction : MonoBehaviour
                 break;
         }
 
-        if (isJump)
+        if (isJump || !canInput)
             return;
 
         if (context.started)
         {
-            rigid.gravityScale = 1f;
-            rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
-            isGround = false;
-            isJump = true;
-            playerState = PlayerState.Jump;
+            if (playerState == PlayerState.WallSlide)
+            {
+                StartCoroutine(WallJumpRoutine());
+            }
+            else
+            {
+                rigid.gravityScale = 1f;
+                rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+                isGround = false;
+                isJump = true;
+                playerState = PlayerState.Jump;
+            }
         }
+    }
+
+    IEnumerator WallJumpRoutine()
+    {
+        canInput = false;
+        rigid.gravityScale = 1f;
+        // 0.5f는 벽에서 살짝 튕겨나가도록 하기 위한 값(-인 이유는 벽의 반대 방향으로 가야하기 때문)
+        rigid.AddForce(new Vector2(-5f * sightDirection, jumpPower), ForceMode2D.Impulse);
+        isWall = false;
+        isGround = false;
+        isJump = true;
+        playerState = PlayerState.Jump;
+
+        yield return wallJumpDelay;
+
+        canInput = true;
     }
 
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (!canInput)
+            return;
+
         // 공격 - 최대 3회까지 연속 공격 가능
         // 상태가 Jump, Roll, WallSlide일 경우 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
@@ -343,6 +384,9 @@ public class PlayerAction : MonoBehaviour
 
     public void OnRoll(InputAction.CallbackContext context)
     {
+        if (!canInput)
+            return;
+
         // 구르기
         // 상태가 Jump, WallSlide일 때 불가
         // 상태가 Block일 경우 Block을 하기 위해 변경되었던 값들을 원상태로 수정
@@ -387,6 +431,9 @@ public class PlayerAction : MonoBehaviour
 
     public void OnBlock(InputAction.CallbackContext context)
     {
+        if (!canInput)
+            return;
+
         // 방어
         // 상태가 Jump, WallSlide, Fall, Hurt, Death일 경우 불가
         // 움직이고 있었던 경우에는 즉시 그 자리에서 멈추고 방어 태세로 전환

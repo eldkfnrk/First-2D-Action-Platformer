@@ -47,6 +47,8 @@ public class PlayerAnimation : MonoBehaviour
                 {
                     animator.SetTrigger("Jump");
                     animator.SetBool("Grounded", false);
+                    animator.SetFloat("AirSpeedY", 1f);
+                    animator.SetBool("WallSlide", false);
                 }
                 break;
             case PlayerAction.PlayerState.Fall:
