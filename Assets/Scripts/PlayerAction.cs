@@ -1,5 +1,5 @@
 using System.Collections;
-using Unity.VisualScripting;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,9 +12,10 @@ public class PlayerAction : MonoBehaviour
         Jump,
         Fall,
         Attack,
-        WallSlide,
         Roll,
         Block,
+        SuccessBlock,
+        WallSlide,
         Hurt,
         Death,
     }
@@ -80,6 +81,13 @@ public class PlayerAction : MonoBehaviour
 
     // 방어
     public bool isBlock;
+    public bool blockSuccess;
+
+    // 피격
+    public bool isHurt;
+
+    // 캐릭터 사망
+    public bool isDeath;
 
     // 컴포넌트
     Rigidbody2D rigid;
@@ -108,7 +116,7 @@ public class PlayerAction : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (isWall || !canInput)
+        if (isWall || !canInput || isBlock)
             return;
 
         if (moveDirection > 0f)
@@ -155,8 +163,15 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Attack:
             case PlayerState.Hurt:
             case PlayerState.Death:
+                rigid.linearVelocityX = 0f;
+                break;
             case PlayerState.Block:
                 rigid.linearVelocityX = 0f;
+                if (!isBlock)
+                    playerState = PlayerState.Idle;
+                break;
+            case PlayerState.SuccessBlock:
+                // 방어 성공 로직 작성 예정
                 break;
             case PlayerState.WallSlide:
                 // 점프를 뛰고 나서 착지를 하지 않고 벽에 붙은 경우 이 점프 바닥 체크를 하지 못하도록 막은 타이머가 초기화가 되지 않아서 벽에 붙었다가 착지한 이후에 점프를 하면 점프를 제대로 뛰지도 못하고 상태 전환도 원할히 이뤄지지 못하였었기에 이렇게 따로 리셋을 시켜준다.
@@ -260,6 +275,7 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Hurt:
             case PlayerState.Death:
             case PlayerState.Fall:
+            case PlayerState.SuccessBlock:
                 return;
             case PlayerState.Block:
                 isBlock = false;
@@ -317,6 +333,8 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Hurt:
             case PlayerState.Death:
             case PlayerState.Fall:
+            case PlayerState.WallSlide:
+            case PlayerState.SuccessBlock:
                 return;
             case PlayerState.Block:
                 isBlock = false;
@@ -398,6 +416,8 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Hurt:
             case PlayerState.Death:
             case PlayerState.Fall:
+            case PlayerState.WallSlide:
+            case PlayerState.SuccessBlock:
                 return;
             case PlayerState.Block:
                 isBlock = false;
@@ -431,7 +451,7 @@ public class PlayerAction : MonoBehaviour
 
     public void OnBlock(InputAction.CallbackContext context)
     {
-        if (!canInput)
+        if (!canInput || isAttack)
             return;
 
         // 방어
@@ -445,6 +465,7 @@ public class PlayerAction : MonoBehaviour
             case PlayerState.Death:
             case PlayerState.Fall:
             case PlayerState.Jump:
+            case PlayerState.WallSlide:
                 return;
         }
 
@@ -457,6 +478,82 @@ public class PlayerAction : MonoBehaviour
         {
             isBlock = true;
             playerState = PlayerState.Block;
+        }
+    }
+
+    public void OnSuccessBlock(InputAction.CallbackContext context)
+    {
+        if (isBlock && !blockSuccess)
+            StartCoroutine(SuccessBlockRoutine());
+    }
+
+    IEnumerator SuccessBlockRoutine()
+    {
+        blockSuccess = true;
+        playerState = PlayerState.SuccessBlock;
+
+        yield return new WaitForSeconds(0.3f);
+
+        blockSuccess = false;
+
+        if (isBlock)
+            playerState = PlayerState.Block;
+        else
+            playerState = PlayerState.Idle;
+    }
+
+    public void OnHurt(InputAction.CallbackContext context)
+    {
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Attack:
+            case PlayerState.Death:
+            case PlayerState.Fall:
+            case PlayerState.Jump:
+            case PlayerState.Block:
+            case PlayerState.WallSlide:
+            case PlayerState.SuccessBlock:
+                return;
+        }
+        // 동작하는지만 확인하도록 키 입력으로 간단한 기능 수행하도록 기능 추가
+        if (!isHurt)
+            StartCoroutine(HurtRoutine());
+    }
+
+    IEnumerator HurtRoutine()
+    {
+        playerState = PlayerState.Hurt;
+        // 0.3초의 무적 시간
+        yield return new WaitForSeconds(0.3f);  // 지금 당장은 사용할 확인용 기능이라서 따로 변수 선언 없이 사용
+        playerState = PlayerState.Idle;
+    }
+
+    public void OnDeath(InputAction.CallbackContext context)
+    {
+        switch (playerState)
+        {
+            case PlayerState.Roll:
+            case PlayerState.Attack:
+            case PlayerState.Hurt:
+            case PlayerState.Fall:
+            case PlayerState.Jump:
+            case PlayerState.Block:
+            case PlayerState.WallSlide:
+            case PlayerState.SuccessBlock:
+                return;
+        }
+
+        // 동작하는지만 확인하도록 키 입력으로 간단한 기능 수행하도록 기능 추가
+        if (!isDeath)
+        {
+            isDeath = true;
+            playerState = PlayerState.Death;
+        }
+        else
+        {
+            isDeath = false;
+            playerState = PlayerState.Idle;
         }
     }
 

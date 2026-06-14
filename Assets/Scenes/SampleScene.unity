@@ -440,6 +440,9 @@ MonoBehaviour:
   rollDurationData: 0.5
   rollCoolTimeData: 1
   isBlock: 0
+  blockSuccess: 0
+  isHurt: 0
+  isDeath: 0
 --- !u!50 &812280542
 Rigidbody2D:
   serializedVersion: 5
@@ -636,6 +639,54 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 8cd0add2-70d5-44a7-904e-47c0986d1c15
     m_ActionName: 'Player/Block[/Keyboard/k]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 812280540}
+        m_TargetAssemblyTypeName: PlayerAction, Assembly-CSharp
+        m_MethodName: OnSuccessBlock
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: b9f3d971-e5f5-4f05-baac-e5ff90e1a90e
+    m_ActionName: 'Player/Success Block[/Keyboard/z]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 812280540}
+        m_TargetAssemblyTypeName: PlayerAction, Assembly-CSharp
+        m_MethodName: OnHurt
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 03c67d31-60fb-4bf9-b410-9904fb0b0a21
+    m_ActionName: 'Player/Hurt[/Keyboard/x]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 812280540}
+        m_TargetAssemblyTypeName: PlayerAction, Assembly-CSharp
+        m_MethodName: OnDeath
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: dac41831-b2eb-41d6-918b-1b8f09356665
+    m_ActionName: 'Player/Death[/Keyboard/c]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player

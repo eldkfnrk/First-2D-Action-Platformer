@@ -8,6 +8,8 @@ public class PlayerAnimation : MonoBehaviour
     PlayerAction playerAction;
 
     bool playingAttackAnimation;
+    bool playingHurtAnimation;
+    bool playingBlockAnimation;
 
     public float attackDelayTime;
     WaitForSeconds attackDelay;
@@ -34,6 +36,7 @@ public class PlayerAnimation : MonoBehaviour
                 animator.SetBool("Grounded", true);
                 animator.SetBool("IdleBlock", false);
                 animator.SetBool("WallSlide", false);
+                animator.SetBool("noBlood", true);
                 break;
             case PlayerAction.PlayerState.Run:
                 animator.SetInteger("AnimState", 1);
@@ -56,14 +59,25 @@ public class PlayerAnimation : MonoBehaviour
                 break;
             case PlayerAction.PlayerState.Attack:
                 if (!playingAttackAnimation)
+                {
+                    animator.SetBool("IdleBlock", false);
                     StartCoroutine(AttackAnimationRoutine());
+                }
                 break;
             case PlayerAction.PlayerState.Roll:
                 if (!curAnimatorState.IsName("Roll"))
+                {
+                    animator.SetBool("IdleBlock", false);
                     animator.SetTrigger("Roll");
+                }
                 break;
             case PlayerAction.PlayerState.Block:
                 animator.SetBool("IdleBlock", true);
+                break;
+            case PlayerAction.PlayerState.SuccessBlock:
+                // 방어 성공 애니메이션 정상 작동 안 되고 있음
+                if (curAnimatorState.IsName("Idle Block") && !playingBlockAnimation)
+                    StartCoroutine(BlockAnimationRoutine());
                 break;
             case PlayerAction.PlayerState.WallSlide:
                 if (!curAnimatorState.IsName("WallSlide"))
@@ -71,6 +85,17 @@ public class PlayerAnimation : MonoBehaviour
                     animator.SetBool("WallSlide", true);
                     animator.SetBool("Grounded", false);
                     animator.SetFloat("AirSpeedY", -1f);
+                }
+                break;
+            case PlayerAction.PlayerState.Hurt:
+                if (!playingHurtAnimation)
+                    StartCoroutine(HurtAnimationRoutine());
+                break;
+            case PlayerAction.PlayerState.Death:
+                if (!curAnimatorState.IsName("Death"))
+                {
+                    animator.SetTrigger("Death");
+                    animator.SetBool("noBlood", false);
                 }
                 break;
         }
@@ -103,5 +128,24 @@ public class PlayerAnimation : MonoBehaviour
         }
 
         playingAttackAnimation = false;
+    }
+
+    IEnumerator HurtAnimationRoutine()
+    {
+        playingHurtAnimation = true;
+        animator.SetTrigger("Hurt");
+
+        yield return new WaitForSeconds(0.3f);
+
+        playingHurtAnimation = false;
+    }
+
+    IEnumerator BlockAnimationRoutine()
+    {
+        playingBlockAnimation = true;
+        animator.SetTrigger("Block");
+
+        yield return new WaitForSeconds(0.3f);
+        playingBlockAnimation = false;
     }
 }
