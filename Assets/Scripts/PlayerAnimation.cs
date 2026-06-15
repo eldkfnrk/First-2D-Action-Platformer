@@ -36,7 +36,6 @@ public class PlayerAnimation : MonoBehaviour
                 animator.SetBool("Grounded", true);
                 animator.SetBool("IdleBlock", false);
                 animator.SetBool("WallSlide", false);
-                animator.SetBool("noBlood", true);
                 break;
             case PlayerAction.PlayerState.Run:
                 animator.SetInteger("AnimState", 1);
@@ -74,10 +73,14 @@ public class PlayerAnimation : MonoBehaviour
             case PlayerAction.PlayerState.Block:
                 animator.SetBool("IdleBlock", true);
                 break;
-            case PlayerAction.PlayerState.SuccessBlock:
-                // 방어 성공 애니메이션 정상 작동 안 되고 있음
+            case PlayerAction.PlayerState.SuccessBlock:               
                 if (curAnimatorState.IsName("Idle Block") && !playingBlockAnimation)
                     StartCoroutine(BlockAnimationRoutine());
+
+                // IdleBlock 파라미터가 true면 트리거로 Block 애니메이션을 재생하여도 바로 Idle Block 애니메이션으로 넘어가 버리는 것이 문제였다.
+                // 그래서 이 문제를 해결하기 위하여 Block 애니메이션이 재생 중일 땐 IdleBlock 파라미터 값을 false로 바꿔 Idle Block 애니메이션이 재생되지 못하도록 수정하였다.
+                if (curAnimatorState.IsName("Block"))
+                    animator.SetBool("IdleBlock", false);
                 break;
             case PlayerAction.PlayerState.WallSlide:
                 if (!curAnimatorState.IsName("WallSlide"))
@@ -145,7 +148,7 @@ public class PlayerAnimation : MonoBehaviour
         playingBlockAnimation = true;
         animator.SetTrigger("Block");
 
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
         playingBlockAnimation = false;
     }
 }

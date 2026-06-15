@@ -492,7 +492,7 @@ public class PlayerAction : MonoBehaviour
         blockSuccess = true;
         playerState = PlayerState.SuccessBlock;
 
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
 
         blockSuccess = false;
 
