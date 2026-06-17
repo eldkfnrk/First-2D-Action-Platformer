@@ -158,7 +158,10 @@ public class PlayerAction : MonoBehaviour
                 }
                 break;
             case PlayerState.Roll:
-                rigid.linearVelocityX = rollSpeed * sightDirection;
+                if (wallCheck.collider!=null)
+                    rigid.linearVelocityX = 0f;
+                else
+                    rigid.linearVelocityX = rollSpeed * sightDirection;
                 break;
             case PlayerState.Attack:
             case PlayerState.Hurt:
