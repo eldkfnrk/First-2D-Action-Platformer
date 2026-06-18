@@ -13,9 +13,21 @@ public class GameManager : MonoBehaviour
 
     public Area area;
 
+    public static GameManager instance;
+    public GameObject player;
+
     private void Awake()
     {
-        int curSceneNum = SceneManager.GetActiveScene().buildIndex;
+        if(instance == null)
+        {
+            instance = this;
+        }
+        else
+        {
+            Destroy(this);
+        }
+
+            int curSceneNum = SceneManager.GetActiveScene().buildIndex;
 
         switch (curSceneNum)
         {

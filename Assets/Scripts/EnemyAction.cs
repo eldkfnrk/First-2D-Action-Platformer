@@ -18,7 +18,7 @@ public class EnemyAction : MonoBehaviour
         Death,
     }
 
-    EnemyActionState actionState;
+    public EnemyActionState actionState;
 
     public enum EnemyState
     {
@@ -27,7 +27,7 @@ public class EnemyAction : MonoBehaviour
         None,
     }
 
-    EnemyState enemyState;
+    public EnemyState enemyState;
 
     // 플레이어 감지
     RaycastHit2D playerDetect;
@@ -48,6 +48,8 @@ public class EnemyAction : MonoBehaviour
     public float dashSpeed;
     public float slideSpeed;
 
+    public float moveDirection;  // 이동 방향 정보
+
     // 점프
     public float jumpPower;
     public float jumpCheckTimer;
@@ -58,6 +60,11 @@ public class EnemyAction : MonoBehaviour
     public bool canDash;
     public bool isHurt;
     public bool isJump;
+    public bool isDetect;  // 플레이어가 범위 내에 들어왔는지 여부
+    public bool isChange;  // 플레이어 감지 여부가 변했는지 여부
+
+    // 동작 타이머
+    public float actionTimer;
 
     Rigidbody2D rigid;
     SpriteRenderer spriteR;
@@ -91,10 +98,24 @@ public class EnemyAction : MonoBehaviour
     private void Update()
     {
         playerDetect = Physics2D.BoxCast(transform.position, detectRange, 0f, Vector2.zero, detectDistance, playerLayer);
-        direction = (playerDetect.collider.gameObject.transform.position.x - transform.position.x) < 0f ? -1f : 1f;  // 플레이어가 캐릭터 기준 왼쪽에 있다면 -1f, 오른쪽에 있다면 1f
+
+        if (!isDetect && playerDetect.collider != null)
+        {
+            isDetect = true;
+            isChange = true;
+        }
+
+        if (isDetect && playerDetect.collider == null)
+        {
+            isDetect = false;
+            isChange = true;
+        }
+
+        direction = (GameManager.instance.player.transform.position.x - transform.position.x) < 0f ? -1f : 1f;  // 플레이어가 캐릭터 기준 왼쪽에 있다면 -1f, 오른쪽에 있다면 1f
         switch (enemyState)
         {
             case EnemyState.Phase1:
+                actionTimer += Time.deltaTime;
                 PhaseOnePattern();
                 break;
             case EnemyState.Phase2:
@@ -116,6 +137,8 @@ public class EnemyAction : MonoBehaviour
 
     private void FixedUpdate()
     {
+        moveDirection = spriteR.flipX ? -1f : 1f;
+
         switch (actionState)
         {
             case EnemyActionState.Idle:
@@ -125,6 +148,8 @@ public class EnemyAction : MonoBehaviour
                 rigid.linearVelocityX = moveSpeed * direction;
                 break;
             case EnemyActionState.Fall:
+                moveDirection = spriteR.flipX ? -1f : 1f;  // 점프 동안은 좌우 움직임을 한 곳으로 통일하기 위하여 따로 이동 방향을 얻도록 한다.
+                rigid.linearVelocityX = moveSpeed * moveDirection;
                 break;
             case EnemyActionState.Dash:
                 break;
@@ -139,7 +164,7 @@ public class EnemyAction : MonoBehaviour
             case EnemyActionState.Croush:
                 break;
             case EnemyActionState.Jump:
-                float moveDirection = spriteR.flipX ? -1f : 1f;  // 점프 동안은 좌우 움직임을 한 곳으로 통일하기 위하여 따로 이동 방향을 얻도록 한다.
+                moveDirection = spriteR.flipX ? -1f : 1f;  // 점프 동안은 좌우 움직임을 한 곳으로 통일하기 위하여 따로 이동 방향을 얻도록 한다.
                 rigid.linearVelocityX = moveSpeed * moveDirection;
                 if (!isJump)
                 {
@@ -151,7 +176,7 @@ public class EnemyAction : MonoBehaviour
                 if (jumpCheckTimer < 0.25f) 
                     return;
 
-                if (rigid.linearVelocityY<0f)
+                if (rigid.linearVelocityY < 0f)
                 {
                     jumpCheckTimer = 0f;
                     actionState = EnemyActionState.Fall;
@@ -170,9 +195,15 @@ public class EnemyAction : MonoBehaviour
     // 페이즈1 패턴
     void PhaseOnePattern()
     {
+        if (actionTimer < 2.5f && !isChange)
+            return;
+
+        isChange = false;
+        actionTimer = 0f;
+
         float actionValue = Random.value;
         // 범위 내에 플레이어 있는 경우
-        if (playerDetect.collider != null)
+        if (isDetect)
         {
             // 행동 확률
             // 공격 60%
@@ -181,7 +212,7 @@ public class EnemyAction : MonoBehaviour
             if (actionValue < 0.1f)  // 10% - 점프
             {
                 actionState = EnemyActionState.Jump;
-            } 
+            }
             else if (actionValue < 0.4f) // 30% - 대쉬
             {
                 actionState = EnemyActionState.Dash;
