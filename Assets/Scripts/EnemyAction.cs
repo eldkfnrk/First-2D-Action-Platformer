@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
@@ -45,10 +46,14 @@ public class EnemyAction : MonoBehaviour
     // 이동
     public float direction;
     public float moveSpeed;
-    public float dashSpeed;
     public float slideSpeed;
 
     public float moveDirection;  // 이동 방향 정보
+
+    // 대쉬
+    public float dashSpeed;
+    public float dashDuration;
+    WaitForSeconds dashDurationTime;
 
     // 점프
     public float jumpPower;
@@ -57,7 +62,6 @@ public class EnemyAction : MonoBehaviour
     // 상태
     public bool isAttack;
     public bool isDash;
-    public bool canDash;
     public bool isHurt;
     public bool isJump;
     public bool isDetect;  // 플레이어가 범위 내에 들어왔는지 여부
@@ -68,6 +72,7 @@ public class EnemyAction : MonoBehaviour
 
     Rigidbody2D rigid;
     SpriteRenderer spriteR;
+    CapsuleCollider2D capsuleColl;
 
     private void Awake()
     {
@@ -75,6 +80,9 @@ public class EnemyAction : MonoBehaviour
         enemyState = EnemyState.None;
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
+        capsuleColl = GetComponent<CapsuleCollider2D>();
+
+        dashDurationTime = new WaitForSeconds(dashDuration);
     }
 
     // 플레이어가 맵에 들어가면 넓은 공간이 나오도록 레벨 디자인
@@ -126,7 +134,7 @@ public class EnemyAction : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (isJump)
+        if (isJump || isDash)
             return;
 
         if (direction > 0f)
@@ -138,11 +146,13 @@ public class EnemyAction : MonoBehaviour
     private void FixedUpdate()
     {
         moveDirection = spriteR.flipX ? -1f : 1f;
+        groundCheck = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, groundLayer);
 
         switch (actionState)
         {
             case EnemyActionState.Idle:
                 jumpCheckTimer = 0f;
+                isJump = false;
                 break;
             case EnemyActionState.Run:
                 rigid.linearVelocityX = moveSpeed * direction;
@@ -150,8 +160,15 @@ public class EnemyAction : MonoBehaviour
             case EnemyActionState.Fall:
                 moveDirection = spriteR.flipX ? -1f : 1f;  // 점프 동안은 좌우 움직임을 한 곳으로 통일하기 위하여 따로 이동 방향을 얻도록 한다.
                 rigid.linearVelocityX = moveSpeed * moveDirection;
+                if(groundCheck.collider != null)
+                {
+                    actionState = EnemyActionState.Idle;
+                }
                 break;
             case EnemyActionState.Dash:
+                rigid.linearVelocityX = dashSpeed * moveDirection;
+                if (!isDash)
+                    StartCoroutine(DashRoutine());
                 break;
             case EnemyActionState.DashAttack:
                 break;
@@ -196,7 +213,7 @@ public class EnemyAction : MonoBehaviour
     void PhaseOnePattern()
     {
         if (actionTimer < 2.5f && !isChange)
-            return;
+           return;
 
         isChange = false;
         actionTimer = 0f;
@@ -248,6 +265,20 @@ public class EnemyAction : MonoBehaviour
     public void Hit()
     {
         
+    }
+
+    IEnumerator DashRoutine()
+    {
+        isDash = true;
+        capsuleColl.enabled = false;
+        rigid.gravityScale = 0f;
+
+        yield return dashDuration;
+
+        isDash = false;
+        capsuleColl.enabled = true;
+        rigid.gravityScale = 1f;
+        actionState = EnemyActionState.Run;
     }
 
     private void OnDrawGizmos()

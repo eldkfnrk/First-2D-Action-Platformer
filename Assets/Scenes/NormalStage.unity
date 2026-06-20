@@ -6506,23 +6506,23 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
-  detectRange: {x: 10, y: 3}
+  detectRange: {x: 6, y: 3}
   detectDistance: 0
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  groundCheckDistance: 0.9
+  groundCheckDistance: 1.75
   wallCheckDistance: 0.4
   direction: 0
-  moveSpeed: 5
-  dashSpeed: 0
+  moveSpeed: 3
   slideSpeed: 0
   moveDirection: 0
-  jumpPower: 0
+  dashSpeed: 10
+  dashDuration: 1
+  jumpPower: 10
   jumpCheckTimer: 0
   isAttack: 0
   isDash: 0
-  canDash: 0
   isHurt: 0
   isJump: 0
   isDetect: 0
@@ -6685,6 +6685,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6149521455377206997, guid: df0172bc1593cdb40a4cec82cb5e82f4, type: 3}
+      propertyPath: m_FlipX
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7001083814757978898, guid: df0172bc1593cdb40a4cec82cb5e82f4, type: 3}
       propertyPath: m_Name
       value: Boss Enemy
@@ -6758,6 +6762,10 @@ PrefabInstance:
     - target: {fileID: 7133928538420238383, guid: 7ca9006dfcb92cc49bb31c12abd86928, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 7133928538420238383, guid: 7ca9006dfcb92cc49bb31c12abd86928, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
