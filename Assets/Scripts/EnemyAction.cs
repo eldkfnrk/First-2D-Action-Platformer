@@ -55,3 +55,35 @@ public class IdleState : BaseState
 
     }
 }
+
+public class RunState : BaseState
+{
+    public override void EnterState()
+    {
+
+    }
+    public override void UpdateState()
+    {
+
+    }
+    public override void ExitState()
+    {
+
+    }
+}
+
+public class DashState : BaseState
+{
+    public override void EnterState()
+    {
+
+    }
+    public override void UpdateState()
+    {
+
+    }
+    public override void ExitState()
+    {
+
+    }
+}
