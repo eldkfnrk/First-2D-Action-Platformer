@@ -560,6 +560,11 @@ public class PlayerAction : MonoBehaviour
         }
     }
 
+    public void OnInteract(InputAction.CallbackContext context)
+    {
+
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.DrawRay(transform.position, Vector2.down * 0.9f);
