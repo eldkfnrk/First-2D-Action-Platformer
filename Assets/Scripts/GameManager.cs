@@ -7,37 +7,32 @@ public class GameManager : MonoBehaviour
     public enum Area
     {
         // 씬 순서와 구역을 일치시키면 현재 플레이어가 있는 구역을 저장할 수 있을 것으로 기대
-        NormalStage,
-        BossStage,
+        TestScene,
+        CentralArea,
     }
 
     public Area area;
 
     public static GameManager instance;
     public GameObject player;
+    public GameObject playerPrefab;
 
     private void Awake()
     {
         if(instance == null)
         {
             instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
             Destroy(this);
         }
+    }
 
-            int curSceneNum = SceneManager.GetActiveScene().buildIndex;
-
-        switch (curSceneNum)
-        {
-            case 0:
-                area = Area.NormalStage;
-                break;
-            case 1:
-                area = Area.BossStage;
-                break;
-        }
+    private void Start()
+    {
+        // 페이드 인 효과 주기(코루틴 활용)
     }
 
     // 이번에 보스전에 몰두하여 FSM을 반드시 구현해야 한다라는 생각에 매몰되었고 그로 인해 구현은 안 되고 시간만 소비하는 날도 있었고 높은 난이도에 시작 저항감이 상승하기만 하였다.
