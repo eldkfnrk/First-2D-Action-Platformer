@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,7 +12,11 @@ public class GameManager : MonoBehaviour
         CentralArea,
     }
 
+    public SpawnSystem spawnSystem;
+    SpawnPoint.PointID playerSpawnPointId;
+
     public Area area;
+    string curSceneName;
 
     public static GameManager instance;
     public GameObject player;
@@ -28,11 +33,15 @@ public class GameManager : MonoBehaviour
         {
             Destroy(this);
         }
+        curSceneName = SceneManager.GetActiveScene().name;
+        area = (Area)Enum.Parse(typeof(Area), curSceneName);
+        playerSpawnPointId = SpawnPoint.PointID.None;
+        SceneManager.sceneLoaded += OnSceneLoad;
     }
 
     private void Start()
     {
-        // 페이드 인 효과 주기(코루틴 활용)
+        
     }
 
     // 이번에 보스전에 몰두하여 FSM을 반드시 구현해야 한다라는 생각에 매몰되었고 그로 인해 구현은 안 되고 시간만 소비하는 날도 있었고 높은 난이도에 시작 저항감이 상승하기만 하였다.
@@ -47,5 +56,53 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void SceneChange(SpawnPoint startPoint)
+    {
+        string targetPointId = startPoint.targetId.ToString();
+        int index = targetPointId.IndexOf('_');
+
+        string nextSceneName = index == -1 ? targetPointId : targetPointId.Substring(0, index);
+
+        playerSpawnPointId = startPoint.targetId;
+
+        SceneManager.LoadScene(nextSceneName);
+        // 페이드 인 효과 주기(코루틴 활용)
+    }
+
+    void CreateSpawnSystem()
+    {
+        GameObject spawnSystemObj = new GameObject();
+        spawnSystemObj.name = "SpawnSystem";
+        spawnSystemObj.transform.position = Vector3.zero;
+        spawnSystem = spawnSystemObj.AddComponent<SpawnSystem>();
+    }
+
+    void CreatePlayer()
+    {
+        if (player != null)
+            return;
+        player = Instantiate(playerPrefab);
+        // 지금 당장은 임시 방편으로 사용(그러나 스폰 시스템과 이벤트, 씬과 관련된 것들을 어느 정도 정리 및 습득하면 수정)
+        SpawnPoint[] points = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
+        foreach(SpawnPoint point in points)
+        {
+            if (point.id == playerSpawnPointId)
+            {
+                player.transform.position = point.transform.position;
+                break;
+            }
+        }
+        playerSpawnPointId = SpawnPoint.PointID.None;
+    }
+
+    void OnSceneLoad(Scene scene, LoadSceneMode mode)
+    {
+        curSceneName = scene.name;
+        area = (Area)Enum.Parse(typeof(Area), curSceneName);
+        CreateSpawnSystem();
+        CreatePlayer();
+        Debug.Log("씬 변환 완료. 현재 씬 : " + curSceneName);
     }
 }

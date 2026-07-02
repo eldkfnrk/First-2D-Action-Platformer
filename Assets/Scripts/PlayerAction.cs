@@ -29,7 +29,7 @@ public class PlayerAction : MonoBehaviour
     }
 
     string interactObjectTag;  // 상호작용 가능한 오브젝트가 태그가 무엇인지 저장하는 문자열
-    GameObject interactObject;  // 상호작용 가능한 오브젝트를 저장하는 변수
+    SpawnPoint teleportPoint;  // 상호작용 가능한 오브젝트를 저장하는 변수
 
     public bool canInput;  // 입력 가능 여부를 저장하는 변수(입력을 막아야 하는 경우 사용을 위한 변수)
 
@@ -115,9 +115,6 @@ public class PlayerAction : MonoBehaviour
     private void Update()
     {
         sightDirection = spriteR.flipX ? -1f : 1f;
-
-        Debug.Log(interactObjectTag);
-        Debug.Log(interactObject);
     }
 
     private void LateUpdate()
@@ -568,9 +565,10 @@ public class PlayerAction : MonoBehaviour
 
     public void OnInteract(InputAction.CallbackContext context)
     {
-        if (interactObject != null && interactObjectTag != "")
+        if (teleportPoint != null)
         {
-            
+            interactObjectTag = "";
+            GameManager.instance.SceneChange(teleportPoint);
         }
     }
 
@@ -580,16 +578,16 @@ public class PlayerAction : MonoBehaviour
 
         if(interactObjectTag == "Door")
         {
-            interactObject = collision.gameObject;
+            teleportPoint = collision.GetComponent<SpawnPoint>();
         }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
         interactObjectTag = "";
-        if(interactObject != null)
+        if(teleportPoint != null)
         {
-            interactObject = null;
+            teleportPoint = null;
         }
     }
 
