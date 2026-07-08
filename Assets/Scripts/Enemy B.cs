@@ -27,6 +27,9 @@ public class EnemyB : MonoBehaviour
     float direction;
     RaycastHit2D frontCheck;
     RaycastHit2D floorCheck;
+
+    Vector2 detectBoxCenter;
+    public Vector2 detectBoxSize;
     RaycastHit2D detectPlayer;
 
     public float actionTime;  // 행동을 한 시간을 저장
@@ -35,7 +38,7 @@ public class EnemyB : MonoBehaviour
     public float goBackTime;  // farawayTime이 이 변수의 값보다 커지면 GoBack 상태로 전환하기 위한 변수
 
     Vector3 originPosition;  // 몬스터가 원래 있던 좌표를 저장하는 변수(몬스터가 리스폰된 위치를 저장)
-    float moveRange;  // 몬스터가 기본 상태일 때 이동 가능한 거리(originPosition에서 이 변수의 값만큼 +-의 범위 내에서만 이동 가능)
+    public float moveRange;  // 몬스터가 기본 상태일 때 이동 가능한 거리(originPosition에서 이 변수의 값만큼 +-의 범위 내에서만 이동 가능)
 
     Vector2 playerDirection;  // 몬스터가 바라보는 플레이어의 방향
     public float maxDistance;  // 몬스터가 플레이어를 쫓는 최대 거리(이 거리 이상으로 멀어지면 다시 돌아가도록 설정)
@@ -70,9 +73,18 @@ public class EnemyB : MonoBehaviour
 
     private void FixedUpdate()
     {
+        detectBoxCenter.x = transform.position.x + direction * 2f;
+        detectBoxCenter.y = transform.position.y;
+
         // Chase 상태에서 앞이 벽이거나 낭떠러지일 경우 -> 상태는 Chase로 두고 가만히 있다가 일정 시간이 지나면 GoBack 상태가 되도록 설정
         frontCheck = Physics2D.Raycast(transform.position, Vector2.right * direction, frontCheckDistance, floorLayer);
         floorCheck = Physics2D.Raycast(transform.position, Vector2.down, floorCheckDistance, floorLayer);
+        detectPlayer = Physics2D.BoxCast(detectBoxCenter, detectBoxSize, 0f, Vector2.right, 0f, playerLayer);
+
+        if(detectPlayer.collider != null)
+        {
+            Debug.Log("감지 성공");
+        }
 
         if (frontCheck.collider != null || floorCheck.collider == null)
             canForward = false;
@@ -86,7 +98,7 @@ public class EnemyB : MonoBehaviour
                 break;
             case ActionState.Move:
                 animator.runtimeAnimatorController = enemyAnimController[1];
-                if(transform.position.x > originPosition.x + 5f || transform.position.x < originPosition.x - 5f)
+                if(transform.position.x > originPosition.x + moveRange || transform.position.x < originPosition.x - moveRange)
                 {
                     direction *= -1f;
                     spriteR.flipX = !spriteR.flipX;
@@ -145,5 +157,11 @@ public class EnemyB : MonoBehaviour
 
             actionTime = 0f;
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(detectBoxCenter, detectBoxSize);
     }
 }

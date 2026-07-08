@@ -380,10 +380,12 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
+  detectBoxSize: {x: 10, y: 4}
   actionTime: 0
   changActionTime: 2.5
   farawayTime: 0
   goBackTime: 2
+  moveRange: 5
   maxDistance: 10
   knockbackTime: 0
   enemyAnimController:
