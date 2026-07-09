@@ -28,6 +28,7 @@ public class EnemyB : MonoBehaviour
     RaycastHit2D frontCheck;
     RaycastHit2D floorCheck;
 
+    public float offsetYValue;
     Vector2 detectBoxCenter;
     public Vector2 detectBoxSize;
     RaycastHit2D detectPlayer;
@@ -37,7 +38,7 @@ public class EnemyB : MonoBehaviour
     public float farawayTime;  // Chase 상태에서 몬스터가 더 이상 플레이어를 향해 이동 불가한 위치에 있을 때 이 시간이 지나면 GoBack 상태로 전환
     public float goBackTime;  // farawayTime이 이 변수의 값보다 커지면 GoBack 상태로 전환하기 위한 변수
 
-    Vector3 originPosition;  // 몬스터가 원래 있던 좌표를 저장하는 변수(몬스터가 리스폰된 위치를 저장)
+    public Vector3 originPosition;  // 몬스터가 원래 있던 좌표를 저장하는 변수(몬스터가 리스폰된 위치를 저장)
     public float moveRange;  // 몬스터가 기본 상태일 때 이동 가능한 거리(originPosition에서 이 변수의 값만큼 +-의 범위 내에서만 이동 가능)
 
     Vector2 playerDirection;  // 몬스터가 바라보는 플레이어의 방향
@@ -66,6 +67,9 @@ public class EnemyB : MonoBehaviour
         canForward = true;
         
         state = Random.Range(0, 2) == 0 ? ActionState.Idle : ActionState.Move;  // 0이면 Idle로 1이면 Move로 시작
+        animator.runtimeAnimatorController = enemyAnimController[(int)state];
+
+        detectBoxCenter.y = transform.position.y + offsetYValue;
 
         direction = Random.Range(0, 1) == 0 ? -1f : 1f;
         spriteR.flipX = direction == 1f ? true : false;
@@ -74,17 +78,11 @@ public class EnemyB : MonoBehaviour
     private void FixedUpdate()
     {
         detectBoxCenter.x = transform.position.x + direction * 2f;
-        detectBoxCenter.y = transform.position.y;
 
         // Chase 상태에서 앞이 벽이거나 낭떠러지일 경우 -> 상태는 Chase로 두고 가만히 있다가 일정 시간이 지나면 GoBack 상태가 되도록 설정
         frontCheck = Physics2D.Raycast(transform.position, Vector2.right * direction, frontCheckDistance, floorLayer);
         floorCheck = Physics2D.Raycast(transform.position, Vector2.down, floorCheckDistance, floorLayer);
         detectPlayer = Physics2D.BoxCast(detectBoxCenter, detectBoxSize, 0f, Vector2.right, 0f, playerLayer);
-
-        if(detectPlayer.collider != null)
-        {
-            Debug.Log("감지 성공");
-        }
 
         if (frontCheck.collider != null || floorCheck.collider == null)
             canForward = false;
@@ -93,11 +91,12 @@ public class EnemyB : MonoBehaviour
         {
             case ActionState.Idle:
                 rigid.linearVelocityX = 0f;
-                animator.runtimeAnimatorController = enemyAnimController[0];
+                ChangeAnimController(enemyAnimController[0]);
                 actionTime += Time.fixedDeltaTime;
+                ChangeChaseState();
                 break;
             case ActionState.Move:
-                animator.runtimeAnimatorController = enemyAnimController[1];
+                ChangeAnimController(enemyAnimController[1]);
                 if(transform.position.x > originPosition.x + moveRange || transform.position.x < originPosition.x - moveRange)
                 {
                     direction *= -1f;
@@ -105,44 +104,65 @@ public class EnemyB : MonoBehaviour
                 }
                 rigid.linearVelocityX = moveSpeed * direction;
                 actionTime += Time.fixedDeltaTime;
+                ChangeChaseState();
                 break;
             case ActionState.Chase:
-                playerDirection = detectPlayer.collider.transform.position - transform.position;
-                if(playerDirection.magnitude > maxDistance)
-                {
-                    state = ActionState.GoBack;
+                ChangeAnimController(enemyAnimController[1]);
+                playerDirection = GameManager.instance.player.transform.position - transform.position;
+
+                // Mathf.Sign 함수는 Vector2의 x 혹은 y의 +-여부를 파악(+면 1f를 -면 -1f를 반환)
+                if (Mathf.Sign(playerDirection.x) != direction)
                     spriteR.flipX = !spriteR.flipX;
-                    break;
-                }
 
                 direction = playerDirection.x > 0f ? 1f : -1f;
 
-                if (!canForward)
+                // 플레이어와 몬스터의 x축 거리가 maxDistance보다 클 경우 멀리 떨어진 것으로 판단하여 Chase 상태를 종료하고 원래 있던 자리로 돌아가도록 한다.
+                // Mathf.Abs 함수는 float의 절대 값을 반환하는 함수
+                if (Mathf.Abs(playerDirection.x) > maxDistance)
                 {
-                    farawayTime += Time.fixedDeltaTime;
-                    rigid.linearVelocityX = 0f;
+                    CantChaseState();
+                }
+                // 플레이어가 점프 최대 높이보다 높게 올라간 경우도 멀리 떨어진 것으로 간주(플레이어 최대 점프 높이와 몬스터의 기본 높이 차이 -> 약 5.5 -> 너무 차이가 적으면 오류가 생길 수 있으니 더 큰 값을 사용)
+                else if (Mathf.Abs(GameManager.instance.player.transform.position.y - transform.position.y) > 6f)  
+                {
+                    CantChaseState();
+                }
+                else if (!canForward)
+                {
+                    CantChaseState();
                 }
                 else
                 {
-                    farawayTime = 0f;
                     rigid.linearVelocityX = moveSpeed * direction;
+                    farawayTime = 0f;
                 }
 
-                if (farawayTime > goBackTime)
+                if(farawayTime > goBackTime)
                 {
                     state = ActionState.GoBack;
+                    farawayTime = 0f;
                     spriteR.flipX = !spriteR.flipX;
+                    canForward = true;
                 }
                 break;
             case ActionState.GoBack:
+                ChangeAnimController(enemyAnimController[1]);
                 direction = originPosition.x - transform.position.x > 0f ? 1f : -1f;
+                spriteR.flipX = originPosition.x - transform.position.x < 0f ? false : true;
+
                 rigid.linearVelocityX = moveSpeed * direction;
 
-                if (Mathf.Approximately(transform.position.x, originPosition.x))
+                // Mathf.Round 함수는 반올림 함수로 인자 값을 소수점이 없을 때까지 반올림 한 값을 반환한다.
+                float originPosX = Mathf.Round(originPosition.x * 10f) / 10f;  // 소수점 1의 자리 수까지 반올림한 값을 획득하는 수식(소수점이 없는 부분까지 반올림을 하니까 소수점 1의 자리 수를 올려놓고 다시 나누어서 값을 획득하는 원리이다.)
+                float transPosX = Mathf.Round(transform.position.x * 10f) / 10f;
+
+                if (Mathf.Approximately(originPosX, transPosX))
                 {
                     state = ActionState.Idle;
                     actionTime = 0f;
                 }
+
+                ChangeChaseState();  // 돌아가다가도 플레이어를 탐지하면 다시 플레이어를 쫓는 상태로 전환되도록 수정
                 break;
         }
 
@@ -155,6 +175,28 @@ public class EnemyB : MonoBehaviour
             else
                 state = ActionState.Move;
 
+            actionTime = 0f;
+        }
+    }
+
+    void CantChaseState()
+    {
+        rigid.linearVelocityX = 0f;
+        ChangeAnimController(enemyAnimController[0]);
+        farawayTime += Time.fixedDeltaTime;
+    }
+
+    void ChangeAnimController(RuntimeAnimatorController target)
+    {
+        if(animator.runtimeAnimatorController != target)
+            animator.runtimeAnimatorController = target;
+    }
+
+    void ChangeChaseState()
+    {
+        if (detectPlayer.collider != null)
+        {
+            state = ActionState.Chase;
             actionTime = 0f;
         }
     }
