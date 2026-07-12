@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyB : MonoBehaviour
@@ -45,6 +46,8 @@ public class EnemyB : MonoBehaviour
     public float maxDistance;  // 몬스터가 플레이어를 쫓는 최대 거리(이 거리 이상으로 멀어지면 다시 돌아가도록 설정)
 
     bool canForward;  // 전진이 가능한지를 저장
+
+    bool playerCollision;
 
     // 넉백을 위한 딜레이 시간
     public float knockbackTime;
@@ -102,8 +105,8 @@ public class EnemyB : MonoBehaviour
                     direction *= -1f;
                     spriteR.flipX = !spriteR.flipX;
                 }
+
                 rigid.linearVelocityX = moveSpeed * direction;
-                actionTime += Time.fixedDeltaTime;
                 ChangeChaseState();
                 break;
             case ActionState.Chase:
@@ -123,17 +126,16 @@ public class EnemyB : MonoBehaviour
                     CantChaseState();
                 }
                 // 플레이어가 점프 최대 높이보다 높게 올라간 경우도 멀리 떨어진 것으로 간주(플레이어 최대 점프 높이와 몬스터의 기본 높이 차이 -> 약 5.5 -> 너무 차이가 적으면 오류가 생길 수 있으니 더 큰 값을 사용)
-                else if (Mathf.Abs(GameManager.instance.player.transform.position.y - transform.position.y) > 6f)  
-                {
-                    CantChaseState();
-                }
-                else if (!canForward)
+                else if (Mathf.Abs(GameManager.instance.player.transform.position.y - transform.position.y) > 6f || !canForward)  
                 {
                     CantChaseState();
                 }
                 else
                 {
-                    rigid.linearVelocityX = moveSpeed * direction;
+                    if (playerCollision)
+                        rigid.linearVelocityX = 0f;
+                    else
+                        rigid.linearVelocityX = moveSpeed * direction;
                     farawayTime = 0f;
                 }
 
@@ -179,6 +181,19 @@ public class EnemyB : MonoBehaviour
         }
     }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.CompareTag("Player"))
+            StartCoroutine(PlayerCollisionRoutine());
+    }
+
+    IEnumerator PlayerCollisionRoutine()
+    {
+        playerCollision = true;
+        yield return new WaitForSeconds(0.4f);
+        playerCollision = false;
+    }
+
     void CantChaseState()
     {
         rigid.linearVelocityX = 0f;
@@ -199,6 +214,12 @@ public class EnemyB : MonoBehaviour
             state = ActionState.Chase;
             actionTime = 0f;
         }
+    }
+
+    // 임시 피격 함수
+    public void Hit()
+    {
+        Debug.Log(gameObject.name + " hit");
     }
 
     private void OnDrawGizmos()

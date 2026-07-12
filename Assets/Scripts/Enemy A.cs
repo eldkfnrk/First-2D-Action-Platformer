@@ -52,6 +52,12 @@ public class EnemyA : MonoBehaviour
         rigid.linearVelocityX = direction * moveSpeed;
     }
 
+    // 임시 피격 함수
+    public void Hit()
+    {
+        Debug.Log(gameObject.name + " hit");
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;

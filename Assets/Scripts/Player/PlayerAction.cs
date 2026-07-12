@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static PlayerAction;
 
 public class PlayerAction : MonoBehaviour
 {
@@ -28,17 +29,17 @@ public class PlayerAction : MonoBehaviour
         None,
     }
 
-    string interactObjectTag;  // »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¿ÀºêÁ§Æ®°¡ ÅÂ±×°¡ ¹«¾ùÀÎÁö ÀúÀåÇÏ´Â ¹®ÀÚ¿­
-    SpawnPoint teleportPoint;  // »óÈ£ÀÛ¿ë °¡´ÉÇÑ ¿ÀºêÁ§Æ®¸¦ ÀúÀåÇÏ´Â º¯¼ö
+    string interactObjectTag;  // ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Â±×°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½
+    SpawnPoint teleportPoint;  // ï¿½ï¿½È£ï¿½Û¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-    public bool canInput;  // ÀÔ·Â °¡´É ¿©ºÎ¸¦ ÀúÀåÇÏ´Â º¯¼ö(ÀÔ·ÂÀ» ¸·¾Æ¾ß ÇÏ´Â °æ¿ì »ç¿ëÀ» À§ÇÑ º¯¼ö)
+    public bool canInput;  // ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½Ô·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ¾ï¿½ ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 
-    // ÇÃ·¹ÀÌ¾î Á¤º¸
+    // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½
     public PlayerState playerState;
     public AttackState attackState;
-    float sightDirection;  // ÇÃ·¹ÀÌ¾î°¡ ¹Ù¶óº¸°í ÀÖ´Â ¹æÇâ(1ÀÌ¸é ¿À¸¥ÂÊ, -1ÀÌ¸é ¿ŞÂÊÀ» ¹Ù¶óº¸°í ÀÖ´Â °Í)
+    float sightDirection;  // ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½Ù¶óº¸°ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½(1ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, -1ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¶óº¸°ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½)
 
-    // ¹Ù´Ú, º® µîÀÇ Ãæµ¹Ã¼ Ã¼Å©
+    // ï¿½Ù´ï¿½, ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½æµ¹Ã¼ Ã¼Å©
     RaycastHit2D groundCheck;
     RaycastHit2D wallCheck;
     public float groundCheckDistance;
@@ -46,26 +47,26 @@ public class PlayerAction : MonoBehaviour
     public LayerMask groundLayer;
     public LayerMask enemyLayer;
 
-    // º®¿¡ ºÙ¾úÀ» ¶§ Çàµ¿
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½àµ¿
     public float slideSpeed;
-    float slideValue;  // ÀÔ·Â ¿©ºÎ¿¡ µû¸¥ °ªÀ» Àû¿ë½ÃÅ³ º¯¼ö
-    public float pressedSlide;  // ¾Æ·¡ ¹æÇâ Å°¸¦ ÀÔ·ÂÇÏ¸é slideSpeed ¼Óµµ°¡ ÀÌ ¼öÄ¡¸¸Å­ ¹è°¡ µÇ¾î »¡¶óÁöµµ·Ï ¼³Á¤ÇÒ ¿¹Á¤
+    float slideValue;  // ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½
+    public float pressedSlide;  // ï¿½Æ·ï¿½ ï¿½ï¿½ï¿½ï¿½ Å°ï¿½ï¿½ ï¿½Ô·ï¿½ï¿½Ï¸ï¿½ slideSpeed ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½Å­ ï¿½è°¡ ï¿½Ç¾ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public bool isWall;
     public float wallJumpDelayTime;
     WaitForSeconds wallJumpDelay;
 
-    // ÁÂ¿ì ÀÌµ¿
+    // ï¿½Â¿ï¿½ ï¿½Ìµï¿½
     public float moveSpeed;
     public float moveDirection;
 
-    // Á¡ÇÁ
+    // ï¿½ï¿½ï¿½ï¿½
     public float jumpPower;
     public bool isJump;
     public bool isGround;
-    public float jumpTimer;  // Á¡ÇÁ ÈÄ Àá½Ã µ¿¾È ¹Ù´Ú °Ë»ç¸¦ ÇÏÁö ¾Ê´Â ½Ã°£
+    public float jumpTimer;  // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ ï¿½Ë»ç¸¦ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½Ã°ï¿½
     public float fallSpeed;
 
-    // °ø°İ
+    // ï¿½ï¿½ï¿½ï¿½
     public bool isAttack;
     public int attackCnt;
     Vector2 attackBoxPos;
@@ -73,7 +74,7 @@ public class PlayerAction : MonoBehaviour
     WaitForSeconds attackDelay;
     public float attackDelayData;
 
-    // ±¸¸£±â
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     public bool isRoll;
     public bool canRoll;
     public float rollSpeed;
@@ -82,17 +83,17 @@ public class PlayerAction : MonoBehaviour
     WaitForSeconds rollCoolTime;
     public float rollCoolTimeData;
 
-    // ¹æ¾î
+    // ï¿½ï¿½ï¿½
     public bool isBlock;
     public bool blockSuccess;
 
-    // ÇÇ°İ
+    // ï¿½Ç°ï¿½
     public bool isHurt;
 
-    // Ä³¸¯ÅÍ »ç¸Á
+    // Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     public bool isDeath;
 
-    // ÄÄÆ÷³ÍÆ®
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
     Rigidbody2D rigid;
     SpriteRenderer spriteR;
     CapsuleCollider2D coll;
@@ -149,7 +150,7 @@ public class PlayerAction : MonoBehaviour
         switch (playerState)
         {
             case PlayerState.Idle:
-                // ÀÌµ¿ Å°°¡ ÀÔ·ÂµÇ¾î ÀÖ´Âµ¥µµ ¿òÁ÷ÀÌ´Â »óÅÂ·Î º¯ÇÏÁö ¾Ê´Â °æ¿ì¸¦ À§ÇÑ Á¶°Ç¹®
+                // ï¿½Ìµï¿½ Å°ï¿½ï¿½ ï¿½Ô·ÂµÇ¾ï¿½ ï¿½Ö´Âµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½ï¿½ì¸¦ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ç¹ï¿½
                 if (moveDirection != 0f)
                     playerState = PlayerState.Run;
 
@@ -177,14 +178,14 @@ public class PlayerAction : MonoBehaviour
                     playerState = PlayerState.Idle;
                 break;
             case PlayerState.SuccessBlock:
-                // ¹æ¾î ¼º°ø ·ÎÁ÷ ÀÛ¼º ¿¹Á¤
+                // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Û¼ï¿½ ï¿½ï¿½ï¿½ï¿½
                 break;
             case PlayerState.WallSlide:
-                // Á¡ÇÁ¸¦ ¶Ù°í ³ª¼­ ÂøÁö¸¦ ÇÏÁö ¾Ê°í º®¿¡ ºÙÀº °æ¿ì ÀÌ Á¡ÇÁ ¹Ù´Ú Ã¼Å©¸¦ ÇÏÁö ¸øÇÏµµ·Ï ¸·Àº Å¸ÀÌ¸Ó°¡ ÃÊ±âÈ­°¡ µÇÁö ¾Ê¾Æ¼­ º®¿¡ ºÙ¾ú´Ù°¡ ÂøÁöÇÑ ÀÌÈÄ¿¡ Á¡ÇÁ¸¦ ÇÏ¸é Á¡ÇÁ¸¦ Á¦´ë·Î ¶ÙÁöµµ ¸øÇÏ°í »óÅÂ ÀüÈ¯µµ ¿øÇÒÈ÷ ÀÌ·ïÁöÁö ¸øÇÏ¿´¾ú±â¿¡ ÀÌ·¸°Ô µû·Î ¸®¼ÂÀ» ½ÃÄÑÁØ´Ù.
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ Ã¼Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ì¸Ó°ï¿½ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾Æ¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ä¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ï¿½â¿¡ ï¿½Ì·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø´ï¿½.
                 jumpTimer = 0f;  
                 rigid.gravityScale = 1f;
                 rigid.linearVelocityX = 0f;
-                rigid.linearVelocityY = (-1f) * slideSpeed * slideValue;  // ¹ØÀ¸·Î ÇÏ°­ÇÏ·Á¸é ¼Óµµ´Â -¿©¾ß ÇÏ±â ¶§¹®¿¡ -1f¸¦ °öÇÏ¿´´Ù.
+                rigid.linearVelocityY = (-1f) * slideSpeed * slideValue;  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï°ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ -ï¿½ï¿½ï¿½ï¿½ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ -1fï¿½ï¿½ ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½.
 
                 if(groundCheck.collider != null)
                 {
@@ -205,7 +206,7 @@ public class PlayerAction : MonoBehaviour
                 }
                 break;
             case PlayerState.Jump:
-                // 0.25ÃÊ µ¿¾È ¹Ù´Ú Ã¼Å© x -> ºü¸¥ ¹Ù´Ú Ã¼Å©·Î Á¡ÇÁ ÇÏÀÚ¸¶ÀÚ ÂøÁöµÈ °ÍÀ¸·Î ÆÇÁ¤µÇ´Â ¹®Á¦¸¦ ÇØ°á
+                // 0.25ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ Ã¼Å© x -> ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ Ã¼Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ø°ï¿½
                 jumpTimer += Time.fixedDeltaTime;
                 if (jumpTimer < 0.25f)
                     break;
@@ -245,11 +246,11 @@ public class PlayerAction : MonoBehaviour
         if (!canInput)
             return;
 
-        // ÀÌµ¿ ¹æÇâ °ª È¹µæ
-        // »óÅÂ°¡ IdleÀÏ ¶§´Â »óÅÂ ÀüÈ¯
-        // »óÅÂ°¡ Jump È¤Àº FallÀÏ ¶§´Â ÀüÈ¯x
-        // »óÅÂ°¡ Attack, Roll, Hurt, Death, BlockÀÏ °æ¿ì¿¡´Â ÀÌµ¿ ºÒ°¡
-        // »óÅÂ°¡ WallSlideÀÏ ¶§´Â ¾Æ·¡·Î ÀÌµ¿ÇÏ´Â °ª¸¸ È¹µæ, ÁÂ¿ì ÀÌµ¿ ºÒ°¡
+        // ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È¹ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Idleï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
+        // ï¿½ï¿½ï¿½Â°ï¿½ Jump È¤ï¿½ï¿½ Fallï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯x
+        // ï¿½ï¿½ï¿½Â°ï¿½ Attack, Roll, Hurt, Death, Blockï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½Ò°ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ WallSlideï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ È¹ï¿½ï¿½, ï¿½Â¿ï¿½ ï¿½Ìµï¿½ ï¿½Ò°ï¿½
         moveDirection = context.ReadValue<Vector2>().x;
         if (moveDirection > 0f)
             moveDirection = 1f;
@@ -270,10 +271,10 @@ public class PlayerAction : MonoBehaviour
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        // ÀÔ·Â°ú µ¿½Ã¿¡ Á¡ÇÁ
-        // ¾î´À »óÅÂ¿¡¼­µç µ¿ÀÛ
-        // »óÅÂ°¡ Attack, Roll, Hurt, DeathÀÏ °æ¿ì¿¡´Â ºÒ°¡
-        // »óÅÂ°¡ BlockÀÏ °æ¿ì BlockÀ» ÇÏ±â À§ÇØ º¯°æµÇ¾ú´ø °ªµéÀ» ¿ø»óÅÂ·Î ¼öÁ¤
+        // ï¿½Ô·Â°ï¿½ ï¿½ï¿½ï¿½Ã¿ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Attack, Roll, Hurt, Deathï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½Ò°ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Blockï¿½ï¿½ ï¿½ï¿½ï¿½ Blockï¿½ï¿½ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
         switch (playerState)
         {
             case PlayerState.Roll:
@@ -312,7 +313,7 @@ public class PlayerAction : MonoBehaviour
     {
         canInput = false;
         rigid.gravityScale = 1f;
-        // 0.5f´Â º®¿¡¼­ »ìÂ¦ Æ¨°Ü³ª°¡µµ·Ï ÇÏ±â À§ÇÑ °ª(-ÀÎ ÀÌÀ¯´Â º®ÀÇ ¹İ´ë ¹æÇâÀ¸·Î °¡¾ßÇÏ±â ¶§¹®)
+        // 0.5fï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Â¦ Æ¨ï¿½Ü³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½(-ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½İ´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½)
         rigid.AddForce(new Vector2(-5f * sightDirection, jumpPower), ForceMode2D.Impulse);
         isWall = false;
         isGround = false;
@@ -329,9 +330,9 @@ public class PlayerAction : MonoBehaviour
         if (!canInput)
             return;
 
-        // °ø°İ - ÃÖ´ë 3È¸±îÁö ¿¬¼Ó °ø°İ °¡´É
-        // »óÅÂ°¡ Jump, Roll, WallSlideÀÏ °æ¿ì ºÒ°¡
-        // »óÅÂ°¡ BlockÀÏ °æ¿ì BlockÀ» ÇÏ±â À§ÇØ º¯°æµÇ¾ú´ø °ªµéÀ» ¿ø»óÅÂ·Î ¼öÁ¤
+        // ï¿½ï¿½ï¿½ï¿½ - ï¿½Ö´ï¿½ 3È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Jump, Roll, WallSlideï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ò°ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Blockï¿½ï¿½ ï¿½ï¿½ï¿½ Blockï¿½ï¿½ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
         switch (playerState)
         {
             case PlayerState.Roll:
@@ -366,25 +367,31 @@ public class PlayerAction : MonoBehaviour
         isAttack = true;
         playerState = PlayerState.Attack;
         attackState = AttackState.Attack1;
-        // overlapbox À§Ä¡ ÁöÁ¤
+        // overlapbox ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½
         attackBoxPos.x = transform.position.x + sightDirection;
         attackBoxPos.y = transform.position.y;
-        EnemyAttack();  
+        yield return new WaitForSeconds(0.2f);  // ì•½ê°„ì˜ íœ˜ë‘ë¥´ëŠ” ì‹œê°„ì„ ì£¼ëŠ” ì‘ì—…(ì´ê²Œ ì—†ìœ¼ë©´ íœ˜ë‘ë¥´ì§€ë„ ì•Šì•˜ëŠ”ë° ê³µê²©ì„ í•œ íŒì •ì´ ëœë‹¤.)
+        EnemyAttack();
 
-        yield return attackDelay;
+        //yield return attackDelay;
+        yield return new WaitForSeconds(0.3f);  // ì„ì‹œë¡œ ê³µê²© ì§€ì—° ì‹œê°„ì„ ë”°ë¡œ ì„¤ì •(ìœ„ì˜ íœ˜ë‘ë¥´ëŠ” ì‹œê°„ì„ ì£¼ê³  ë‚¨ì€ ì‹œê°„ë§Œí¼ ë” ì§€ë‚˜ì•¼ ë‹¤ìŒ ê³µê²©ì´ ë˜ë„ë¡ ê³µê²© ë”œë ˆì´ ì‹œê°„ì„ ë§ì¶”ê¸° ìœ„í•´ ì„ì‹œë¡œ ìˆ˜í–‰)
 
-        if(attackCnt >= 2)
+        if (attackCnt >= 2)
         {
             attackState = AttackState.Attack2;
+            yield return new WaitForSeconds(0.2f);
             EnemyAttack();
-            yield return attackDelay;
+            //yield return attackDelay;
+            yield return new WaitForSeconds(0.3f);
         }
 
         if (attackCnt == 3)
         {
             attackState = AttackState.Attack3;
+            yield return new WaitForSeconds(0.2f);
             EnemyAttack();
-            yield return attackDelay;
+            //yield return attackDelay;
+            yield return new WaitForSeconds(0.3f);
         }
 
         isAttack = false;
@@ -395,14 +402,18 @@ public class PlayerAction : MonoBehaviour
 
     void EnemyAttack()
     {
-        // Àû °ø°İ
-        // overlapbox ÀÌ¿ë
-        // °ø°İ ½Ã overlapbox¸¦ È°¼ºÈ­ÇÏ¿© ±× ¾È¿¡ ÀÖ´Â ÀûµéÀ» °ø°İ
-        Collider2D hitEnemy = Physics2D.OverlapBox(attackBoxPos, attackBoxSize, 0f, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackBoxPos, attackBoxSize, 0f, enemyLayer);
 
-        if(hitEnemy != null)
+        // ì¼ë‹¨ ì§ì ‘ ì ì˜ í”¼ê²© í•¨ìˆ˜ë¥¼ í˜¸ì¶œ(ì´í›„ ë” ë‚˜ì€ ë°©ë²•ì´ ì¡´ì¬í•œë‹¤ë©´ ìˆ˜ì •)
+        foreach(Collider2D hitEnemy in hitEnemies)
         {
-            // Àû¿¡°Ô µ¥¹ÌÁö¸¦ ÁÖ´Â µ¿ÀÛ ¼öÇà
+            // ìš°ì„ ì€ ì´ë¦„ì„ ë‚˜ëˆ„ì–´ì„œ ì •ë¦¬í–ˆê¸° ë•Œë¬¸ì— ì´ë¦„ì— ë”°ë¼ í˜¸ì¶œ ë°©ì‹ì„ ë‹¤ë¥´ê²Œ ê°€ì ¸ê°„ë‹¤.
+            // ì´í›„ì—ëŠ” í•˜ë‚˜ì˜ í° ë§¤ë‹ˆì €ë¥¼ ë§Œë“¤ê±°ë‚˜ ë¶€ëª¨ í´ë˜ìŠ¤ë¥¼ ë§Œë“¤ì–´ì„œ ì‚¬ìš©í•  ê²ƒì´ë‹¤.
+            string enemyName = hitEnemy.name.Substring(0, 7);
+            if (enemyName == "Enemy A")
+                hitEnemy.GetComponent<EnemyA>().Hit();
+            else if (enemyName == "Enemy B")
+                hitEnemy.GetComponent<EnemyB>().Hit();
         }
     }
 
@@ -411,10 +422,10 @@ public class PlayerAction : MonoBehaviour
         if (!canInput)
             return;
 
-        // ±¸¸£±â
-        // »óÅÂ°¡ Jump, WallSlideÀÏ ¶§ ºÒ°¡
-        // »óÅÂ°¡ BlockÀÏ °æ¿ì BlockÀ» ÇÏ±â À§ÇØ º¯°æµÇ¾ú´ø °ªµéÀ» ¿ø»óÅÂ·Î ¼öÁ¤
-        // °ø°İ ÁßÀÏ °æ¿ì ÇØ´ç °ø°İÀ» ÁßÁöÇÏ°í º¯°æµÇ¾ú´ø °ªµéÀ» ¿ø»óÅÂ·Î ¼öÁ¤
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Jump, WallSlideï¿½ï¿½ ï¿½ï¿½ ï¿½Ò°ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Blockï¿½ï¿½ ï¿½ï¿½ï¿½ Blockï¿½ï¿½ ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ø´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
         switch (playerState)
         {
             case PlayerState.Jump:
@@ -460,9 +471,9 @@ public class PlayerAction : MonoBehaviour
         if (!canInput || isAttack)
             return;
 
-        // ¹æ¾î
-        // »óÅÂ°¡ Jump, WallSlide, Fall, Hurt, DeathÀÏ °æ¿ì ºÒ°¡
-        // ¿òÁ÷ÀÌ°í ÀÖ¾ú´ø °æ¿ì¿¡´Â Áï½Ã ±× ÀÚ¸®¿¡¼­ ¸ØÃß°í ¹æ¾î ÅÂ¼¼·Î ÀüÈ¯
+        // ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Â°ï¿½ Jump, WallSlide, Fall, Hurt, Deathï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ò°ï¿½
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Ì°ï¿½ ï¿½Ö¾ï¿½ï¿½ï¿½ ï¿½ï¿½ì¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ú¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ ï¿½Â¼ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
         switch (playerState)
         {
             case PlayerState.Roll:
@@ -508,33 +519,6 @@ public class PlayerAction : MonoBehaviour
             playerState = PlayerState.Idle;
     }
 
-    public void OnHurt(InputAction.CallbackContext context)
-    {
-        switch (playerState)
-        {
-            case PlayerState.Roll:
-            case PlayerState.Attack:
-            case PlayerState.Death:
-            case PlayerState.Fall:
-            case PlayerState.Jump:
-            case PlayerState.Block:
-            case PlayerState.WallSlide:
-            case PlayerState.SuccessBlock:
-                return;
-        }
-        // µ¿ÀÛÇÏ´ÂÁö¸¸ È®ÀÎÇÏµµ·Ï Å° ÀÔ·ÂÀ¸·Î °£´ÜÇÑ ±â´É ¼öÇàÇÏµµ·Ï ±â´É Ãß°¡
-        if (!isHurt)
-            StartCoroutine(HurtRoutine());
-    }
-
-    IEnumerator HurtRoutine()
-    {
-        playerState = PlayerState.Hurt;
-        // 0.3ÃÊÀÇ ¹«Àû ½Ã°£
-        yield return new WaitForSeconds(0.3f);  // Áö±İ ´çÀåÀº »ç¿ëÇÒ È®ÀÎ¿ë ±â´ÉÀÌ¶ó¼­ µû·Î º¯¼ö ¼±¾ğ ¾øÀÌ »ç¿ë
-        playerState = PlayerState.Idle;
-    }
-
     public void OnDeath(InputAction.CallbackContext context)
     {
         switch (playerState)
@@ -550,7 +534,7 @@ public class PlayerAction : MonoBehaviour
                 return;
         }
 
-        // µ¿ÀÛÇÏ´ÂÁö¸¸ È®ÀÎÇÏµµ·Ï Å° ÀÔ·ÂÀ¸·Î °£´ÜÇÑ ±â´É ¼öÇàÇÏµµ·Ï ±â´É Ãß°¡
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ Å° ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
         if (!isDeath)
         {
             isDeath = true;
@@ -570,6 +554,29 @@ public class PlayerAction : MonoBehaviour
             interactObjectTag = "";
             GameManager.instance.SceneChange(teleportPoint);
         }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.CompareTag("Enemy"))
+        {
+            StartCoroutine(HurtRoutine(collision.transform));
+        }
+    }
+
+    IEnumerator HurtRoutine(Transform enemy)
+    {
+        playerState = PlayerState.Hurt;
+        float knockbackDir = transform.position.x - enemy.position.x;
+        knockbackDir /= Mathf.Abs(knockbackDir);  // í¬ê¸°ë¥¼ 1ë¡œ ë§Œë“¤ê³  +- ê°’ë§Œ íšë“
+        // ë„‰ë°±
+        rigid.AddForce(new Vector2(knockbackDir * 6.5f, 3f), ForceMode2D.Impulse);
+        canInput = false;
+        Time.timeScale = 0.5f;
+        yield return new WaitForSeconds(0.25f);
+        playerState = PlayerState.Idle;
+        Time.timeScale = 1f;
+        canInput = true;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
