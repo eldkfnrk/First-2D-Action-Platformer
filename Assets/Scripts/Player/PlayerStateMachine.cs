@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -19,11 +20,13 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerData constantData;  // constant - 상수, 변하지 않는 데이터라는 의미로 붙인 변수명
     public PlayerRuntimeData variableData;  // variable - 변수, 변하는 데이터라는 의미로 붙인 변수명
     public Rigidbody2D rigid;
+    public SpriteRenderer spriteR;
 
     private void Awake()
     {
         variableData = GetComponent<PlayerRuntimeData>();
         rigid = GetComponent<Rigidbody2D>();
+        spriteR = GetComponent<SpriteRenderer>();
 
         states = new Dictionary<State, BaseState>();
         states.Add(State.Idle, new IdleState(this));
@@ -40,20 +43,51 @@ public class PlayerStateMachine : MonoBehaviour
         switch (playerState)
         {
             case State.Idle:
-                if (variableData.direction != 0f)
+                if (variableData.jumpPressed)
+                {
+                    ChangeState(State.Jump);
+                    break;
+                }
+                if (variableData.moveDirection != 0f)
                     ChangeState(State.Run);
                 break;
             case State.Run:
-                if (variableData.direction == 0f)
+                if (variableData.jumpPressed)
+                {
+                    ChangeState(State.Jump);
+                    break;
+                }
+                if (variableData.moveDirection == 0f)
                     ChangeState(State.Idle);
                 break;
             case State.Jump:
+                if (variableData.groundCheck.collider != null)
+                {
+                    if (rigid.linearVelocityY <= 0f)
+                        ChangeState(State.Idle);
+                    break;
+                }
+
+                if (rigid.linearVelocityY < 0f)
+                    ChangeState(State.Fall);
                 break;
             case State.Fall:
+                if (variableData.groundCheck.collider != null)
+                    ChangeState(State.Idle);
                 break;
         }
 
         currentState.Update();
+    }
+
+    private void LateUpdate()
+    {
+        variableData.sightDirection = spriteR.flipX ? -1f : 1f;
+    }
+
+    private void FixedUpdate()
+    {
+        variableData.groundCheck = Physics2D.Raycast(transform.position, Vector2.down, constantData.groundCheckDistance, constantData.groundLayer);
     }
 
     void ChangeState(State state)
@@ -61,6 +95,12 @@ public class PlayerStateMachine : MonoBehaviour
         currentState.Exit();
         currentState = states[state];
         currentState.Enter();
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(transform.position, Vector2.down * constantData.groundCheckDistance);
     }
 }
 
@@ -76,6 +116,13 @@ public abstract class BaseState
     public abstract void Enter();
     public abstract void Update();
     public abstract void Exit();
+
+    protected void Move()
+    {
+        fsmController.rigid.linearVelocityX = fsmController.variableData.moveDirection * fsmController.constantData.moveSpeed;
+        if (fsmController.variableData.sightDirection == -fsmController.variableData.moveDirection)  // 바라보는 방향과 이동 방향이 반대인 경우
+            fsmController.spriteR.flipX = !fsmController.spriteR.flipX;
+    }
 }
 
 public class IdleState : BaseState
@@ -88,6 +135,7 @@ public class IdleState : BaseState
     {
         fsmController.playerState = PlayerStateMachine.State.Idle;
         fsmController.variableData.isJump = false;
+        fsmController.rigid.gravityScale = 1f;
     }
 
     public override void Update()
@@ -112,9 +160,7 @@ public class RunState : BaseState
 
     public override void Update()
     {
-        fsmController.rigid.linearVelocityX = fsmController.variableData.direction * fsmController.constantData.moveSpeed;
-        Debug.Log(fsmController.rigid.linearVelocityX);
-        Debug.Log(fsmController.variableData.direction);
+        Move();
     }
 
     public override void Exit()
@@ -129,17 +175,21 @@ public class JumpState : BaseState
 
     public override void Enter()
     {
-
+        fsmController.playerState = PlayerStateMachine.State.Jump;
+        fsmController.rigid.AddForce(Vector2.up * fsmController.constantData.jumpPower, ForceMode2D.Impulse);
+        fsmController.variableData.isJump = true;
+        fsmController.variableData.jumpPressed = false;
     }
 
     public override void Update()
     {
-
+        Move();  // 점프 중에도 좌우 이동은 가능하도록 설정
     }
 
     public override void Exit()
     {
-
+        if (fsmController.variableData.moveDirection == 0f)
+            fsmController.rigid.linearVelocityX = 0f;
     }
 }
 
@@ -149,16 +199,18 @@ public class FallState : BaseState
 
     public override void Enter()
     {
-
+        fsmController.playerState = PlayerStateMachine.State.Fall;
+        fsmController.rigid.gravityScale = fsmController.constantData.fallSpeed;
     }
 
     public override void Update()
     {
-
+        Move();  // 떨어지는 중에도 좌우 이동은 가능하도록 설정
     }
 
     public override void Exit()
     {
-
+        if (fsmController.variableData.moveDirection == 0f)
+            fsmController.rigid.linearVelocityX = 0f;
     }
 }
