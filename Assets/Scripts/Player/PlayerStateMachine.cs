@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.Playables;
 
 public class PlayerStateMachine : MonoBehaviour
 {
@@ -19,12 +20,14 @@ public class PlayerStateMachine : MonoBehaviour
 
     public PlayerData constantData;  // constant - 상수, 변하지 않는 데이터라는 의미로 붙인 변수명
     public PlayerRuntimeData variableData;  // variable - 변수, 변하는 데이터라는 의미로 붙인 변수명
+    public PlayerAnimation PlayerAnimation;  // 애니메이션 관련 스크립트
     public Rigidbody2D rigid;
     public SpriteRenderer spriteR;
 
     private void Awake()
     {
         variableData = GetComponent<PlayerRuntimeData>();
+        PlayerAnimation = GetComponent<PlayerAnimation>();
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
 
@@ -36,6 +39,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         playerState = State.Idle;
         currentState = states[playerState];
+        currentState.Enter();
     }
 
     private void Update()
@@ -48,6 +52,12 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Jump);
                     break;
                 }
+                else if(variableData.groundCheck.collider == null)
+                {
+                    ChangeState(State.Fall);
+                    break;
+                }
+
                 if (variableData.moveDirection != 0f)
                     ChangeState(State.Run);
                 break;
@@ -57,6 +67,12 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Jump);
                     break;
                 }
+                else if (variableData.groundCheck.collider == null)
+                {
+                    ChangeState(State.Fall);
+                    break;
+                }
+
                 if (variableData.moveDirection == 0f)
                     ChangeState(State.Idle);
                 break;
@@ -136,6 +152,7 @@ public class IdleState : BaseState
         fsmController.playerState = PlayerStateMachine.State.Idle;
         fsmController.variableData.isJump = false;
         fsmController.rigid.gravityScale = 1f;
+        fsmController.PlayerAnimation.PlayIdle();
     }
 
     public override void Update()
@@ -156,6 +173,7 @@ public class RunState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Run;
+        fsmController.PlayerAnimation.PlayRun();
     }
 
     public override void Update()
@@ -179,6 +197,7 @@ public class JumpState : BaseState
         fsmController.rigid.AddForce(Vector2.up * fsmController.constantData.jumpPower, ForceMode2D.Impulse);
         fsmController.variableData.isJump = true;
         fsmController.variableData.jumpPressed = false;
+        fsmController.PlayerAnimation.PlayJump();
     }
 
     public override void Update()
@@ -201,6 +220,7 @@ public class FallState : BaseState
     {
         fsmController.playerState = PlayerStateMachine.State.Fall;
         fsmController.rigid.gravityScale = fsmController.constantData.fallSpeed;
+        fsmController.PlayerAnimation.PlayFall();
     }
 
     public override void Update()

@@ -624,6 +624,7 @@ MonoBehaviour:
   playerState: 0
   constantData: {fileID: 11400000, guid: 0152e060e33bee44389aa751605abb62, type: 2}
   variableData: {fileID: 0}
+  PlayerAnimation: {fileID: 0}
   rigid: {fileID: 0}
   spriteR: {fileID: 0}
 --- !u!114 &1343013085
@@ -650,9 +651,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fbccc30d0d1a549ada1d308a23d17d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerRuntimeData
+  sightDirection: 0
   moveDirection: 0
   isJump: 0
   jumpPressed: 0
+--- !u!114 &1343013092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1343013075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa70cdd147ad94d41ac6b792beb667f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimation
 --- !u!1 &1394808287
 GameObject:
   m_ObjectHideFlags: 0
@@ -6771,6 +6785,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7133928538420238383, guid: 7ca9006dfcb92cc49bb31c12abd86928, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1343013085}
+    - targetCorrespondingSourceObject: {fileID: 7133928538420238383, guid: 7ca9006dfcb92cc49bb31c12abd86928, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1343013092}
     - targetCorrespondingSourceObject: {fileID: 7133928538420238383, guid: 7ca9006dfcb92cc49bb31c12abd86928, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1343013084}
