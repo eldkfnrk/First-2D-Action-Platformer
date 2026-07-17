@@ -19,3 +19,4 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   groundCheckDistance: 1
+  wallCheckDistance: 0.5

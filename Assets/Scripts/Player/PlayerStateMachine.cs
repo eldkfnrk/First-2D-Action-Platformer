@@ -12,6 +12,7 @@ public class PlayerStateMachine : MonoBehaviour
         Run,
         Jump,
         Fall,
+        WallSlide,
     }
     public State playerState;  // 변하는 데이터 값이지만 예외적으로 상태 데이터이기 때문에 직접 관리
 
@@ -36,6 +37,7 @@ public class PlayerStateMachine : MonoBehaviour
         states.Add(State.Run, new RunState(this));
         states.Add(State.Jump, new JumpState(this));
         states.Add(State.Fall, new FallState(this));
+        states.Add(State.WallSlide, new WallSlideState(this));
 
         playerState = State.Idle;
         currentState = states[playerState];
@@ -47,36 +49,23 @@ public class PlayerStateMachine : MonoBehaviour
         switch (playerState)
         {
             case State.Idle:
-                if (variableData.jumpPressed)
-                {
-                    ChangeState(State.Jump);
+                if (CheckJumpOrFall())
                     break;
-                }
-                else if(variableData.groundCheck.collider == null)
-                {
-                    ChangeState(State.Fall);
-                    break;
-                }
 
                 if (variableData.moveDirection != 0f)
                     ChangeState(State.Run);
                 break;
             case State.Run:
-                if (variableData.jumpPressed)
-                {
-                    ChangeState(State.Jump);
+                if (CheckJumpOrFall())
                     break;
-                }
-                else if (variableData.groundCheck.collider == null)
-                {
-                    ChangeState(State.Fall);
-                    break;
-                }
 
                 if (variableData.moveDirection == 0f)
                     ChangeState(State.Idle);
                 break;
             case State.Jump:
+                if (WallCheck())
+                    break;
+
                 if (variableData.groundCheck.collider != null)
                 {
                     if (rigid.linearVelocityY <= 0f)
@@ -88,12 +77,21 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Fall);
                 break;
             case State.Fall:
+                if (WallCheck())
+                    break;
+
                 if (variableData.groundCheck.collider != null)
                     ChangeState(State.Idle);
+                break;
+            case State.WallSlide:
+                if (variableData.groundCheck.collider != null)
+                    ChangeState(State.Idle);                
                 break;
         }
 
         currentState.Update();
+
+        Debug.Log(playerState);
     }
 
     private void LateUpdate()
@@ -104,6 +102,7 @@ public class PlayerStateMachine : MonoBehaviour
     private void FixedUpdate()
     {
         variableData.groundCheck = Physics2D.Raycast(transform.position, Vector2.down, constantData.groundCheckDistance, constantData.groundLayer);
+        variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
     }
 
     void ChangeState(State state)
@@ -113,10 +112,47 @@ public class PlayerStateMachine : MonoBehaviour
         currentState.Enter();
     }
 
+    bool CheckJumpOrFall()
+    {
+        // 점프 입력이 있었으면 점프 상태로 전환
+        // 착지 상태가 아니면 떨어지는 상태로 전환
+        if (variableData.jumpPressed)
+        {
+            if (variableData.wallCheck.collider != null)
+                return false;
+            else
+            {
+                ChangeState(State.Jump);
+                return true;
+            }
+        }
+        else if (variableData.groundCheck.collider == null)
+        {
+            ChangeState(State.Fall);
+            return true;
+        }
+
+        return false;
+    }
+
+    bool WallCheck()
+    {
+        // 앞에 벽이 있는지 확인(이때 착지 상태가 아니어야 벽에 있다고 판단) - 벽에 붙어서 미끄러지는 상태 전환을 위한 함수
+        if ((variableData.isJump || variableData.groundCheck.collider == null) && variableData.wallCheck.collider != null)
+        {
+            ChangeState(State.WallSlide);
+            return true;
+        }
+
+        return false;
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, Vector2.down * constantData.groundCheckDistance);
+        Gizmos.color = Color.darkRed;
+        Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance);
     }
 }
 
@@ -232,5 +268,33 @@ public class FallState : BaseState
     {
         if (fsmController.variableData.moveDirection == 0f)
             fsmController.rigid.linearVelocityX = 0f;
+    }
+}
+
+public class WallSlideState : BaseState
+{
+    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
+    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
+    public WallSlideState(PlayerStateMachine controller) : base(controller) { }
+
+    public override void Enter()
+    {
+        fsmController.playerState = PlayerStateMachine.State.WallSlide;
+        fsmController.variableData.isWall = true;
+        fsmController.variableData.isJump = false;
+        fsmController.PlayerAnimation.PlayWallSlide();
+    }
+
+    public override void Update()
+    {
+        if (fsmController.variableData.downKeyPressed)
+            fsmController.rigid.linearVelocityY = -2f;
+        else
+            fsmController.rigid.linearVelocityY = 0f;
+    }
+
+    public override void Exit()
+    {
+
     }
 }

@@ -13,4 +13,5 @@ public class PlayerData : ScriptableObject
     // 레이어 마스크
     public LayerMask groundLayer;  // 땅에 해당하는 레이어
     public float groundCheckDistance;  // 땅을 체크할 거리
+    public float wallCheckDistance;  // 벽을 체크할 거리
 }

@@ -13,7 +13,7 @@ public class PlayerAnimation : MonoBehaviour
     public void PlayIdle()
     {
         animator.SetBool("Grounded", true);
-        animator.SetFloat("AirSpeedY", 0.1f);
+        animator.SetFloat("AirSpeedY", 0f);
         animator.SetInteger("AnimState", 0);
     }
 
@@ -30,6 +30,12 @@ public class PlayerAnimation : MonoBehaviour
 
     public void PlayFall()
     {
+        animator.SetFloat("AirSpeedY", -1f);
+    }
+
+    public void PlayWallSlide()
+    {
+        animator.SetBool("WallSlide", true);
         animator.SetFloat("AirSpeedY", -1f);
     }
 }

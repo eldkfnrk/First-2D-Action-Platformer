@@ -6,7 +6,7 @@ using UnityEngine.Playables;
 public class PlayerInputManager : MonoBehaviour
 {
     PlayerRuntimeData variableData;
-    float directionData;
+    Vector2 inputMoveValue;
 
     private void Awake()
     {
@@ -15,14 +15,15 @@ public class PlayerInputManager : MonoBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        directionData = context.ReadValue<Vector2>().x;
+        inputMoveValue = context.ReadValue<Vector2>();
+        variableData.downKeyPressed = inputMoveValue.y < 0f;
 
         // y키를 같이 누르게 되면 x의 값이 작아지게 되는데 그러면 이동 속도에 영향을 끼치게 되므로 값을 일정하게 유지할 수 있도록 설정
-        if (directionData > 0f)
+        if (inputMoveValue.x > 0f)
             variableData.moveDirection = 1f;
-        if (directionData < 0f)
+        if (inputMoveValue.x < 0f)
             variableData.moveDirection = -1f;
-        if (directionData == 0f)
+        if (inputMoveValue.x == 0f)
             variableData.moveDirection = 0f;
     }
 
