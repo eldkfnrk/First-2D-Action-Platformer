@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -37,8 +38,11 @@ public class PlayerStateMachine : MonoBehaviour
         states.Add(State.Run, new RunState(this));
         states.Add(State.Jump, new JumpState(this));
         states.Add(State.Fall, new FallState(this));
-        states.Add(State.WallSlide, new WallSlideState(this));
+        states.Add(State.WallSlide, new WallSlideState(this));        
+    }
 
+    private void Start()
+    {
         playerState = State.Idle;
         currentState = states[playerState];
         currentState.Enter();
@@ -84,14 +88,18 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Idle);
                 break;
             case State.WallSlide:
+                if (variableData.jumpPressed)
+                {
+                    ChangeState(State.Jump);
+                    break;
+                }
+
                 if (variableData.groundCheck.collider != null)
                     ChangeState(State.Idle);                
                 break;
         }
 
         currentState.Update();
-
-        Debug.Log(playerState);
     }
 
     private void LateUpdate()
@@ -119,7 +127,10 @@ public class PlayerStateMachine : MonoBehaviour
         if (variableData.jumpPressed)
         {
             if (variableData.wallCheck.collider != null)
+            {
+                variableData.jumpPressed = false;
                 return false;
+            }
             else
             {
                 ChangeState(State.Jump);
@@ -137,14 +148,28 @@ public class PlayerStateMachine : MonoBehaviour
 
     bool WallCheck()
     {
+        if (variableData.cantInput)
+            return false;
+
         // 앞에 벽이 있는지 확인(이때 착지 상태가 아니어야 벽에 있다고 판단) - 벽에 붙어서 미끄러지는 상태 전환을 위한 함수
-        if ((variableData.isJump || variableData.groundCheck.collider == null) && variableData.wallCheck.collider != null)
+        if (variableData.isJump && variableData.wallCheck.collider != null)
         {
             ChangeState(State.WallSlide);
             return true;
         }
 
         return false;
+    }
+
+    public void CantInputChange()
+    {
+        StartCoroutine(CantInputChangeRoutine());
+    }
+
+    IEnumerator CantInputChangeRoutine()
+    {
+        yield return new WaitForSeconds(0.2f);
+        variableData.cantInput = false;
     }
 
     private void OnDrawGizmos()
@@ -171,6 +196,9 @@ public abstract class BaseState
 
     protected void Move()
     {
+        if (fsmController.variableData.cantInput)
+            return;
+
         fsmController.rigid.linearVelocityX = fsmController.variableData.moveDirection * fsmController.constantData.moveSpeed;
         if (fsmController.variableData.sightDirection == -fsmController.variableData.moveDirection)  // 바라보는 방향과 이동 방향이 반대인 경우
             fsmController.spriteR.flipX = !fsmController.spriteR.flipX;
@@ -230,8 +258,23 @@ public class JumpState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Jump;
-        fsmController.rigid.AddForce(Vector2.up * fsmController.constantData.jumpPower, ForceMode2D.Impulse);
         fsmController.variableData.isJump = true;
+
+        if (fsmController.variableData.isWall)
+        {
+            fsmController.variableData.wallJumpVec.x = -fsmController.variableData.sightDirection * fsmController.constantData.hitWallPower;
+            fsmController.variableData.wallJumpVec.y = fsmController.constantData.jumpPower;
+            fsmController.variableData.cantInput = true;
+            fsmController.variableData.isWall = false;
+            fsmController.rigid.AddForce(fsmController.variableData.wallJumpVec, ForceMode2D.Impulse);
+            fsmController.spriteR.flipX = !fsmController.spriteR.flipX;
+            fsmController.CantInputChange();
+        }
+        else
+        {
+            fsmController.rigid.AddForce(Vector2.up * fsmController.constantData.jumpPower, ForceMode2D.Impulse);
+        }
+
         fsmController.variableData.jumpPressed = false;
         fsmController.PlayerAnimation.PlayJump();
     }
@@ -256,6 +299,7 @@ public class FallState : BaseState
     {
         fsmController.playerState = PlayerStateMachine.State.Fall;
         fsmController.rigid.gravityScale = fsmController.constantData.fallSpeed;
+        fsmController.variableData.isJump = true;
         fsmController.PlayerAnimation.PlayFall();
     }
 
@@ -295,6 +339,6 @@ public class WallSlideState : BaseState
 
     public override void Exit()
     {
-
+        
     }
 }

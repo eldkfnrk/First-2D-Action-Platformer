@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
   moveSpeed: 5
   jumpPower: 10
+  hitWallPower: 4
   fallSpeed: 2.5
   groundLayer:
     serializedVersion: 2
