@@ -16,6 +16,7 @@ MonoBehaviour:
   jumpPower: 10
   hitWallPower: 4
   fallSpeed: 2.5
+  rollSpeed: 10
   groundLayer:
     serializedVersion: 2
     m_Bits: 64

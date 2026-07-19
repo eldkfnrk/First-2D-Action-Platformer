@@ -30,7 +30,13 @@ public class PlayerInputManager : MonoBehaviour
     public void OnJump(InputAction.CallbackContext context)
     {
         if (context.started && !variableData.isJump)
-            variableData.jumpPressed = true;
+            variableData.jumpKeyDown = true;
+    }
+
+    public void OnRoll(InputAction.CallbackContext context)
+    {
+        if (context.started && !variableData.isRoll)
+            variableData.rollKeyDown = true;
     }
 
     //IEnumerator WallJumpRoutine()
@@ -122,55 +128,6 @@ public class PlayerInputManager : MonoBehaviour
     //    attackCnt = 0;
     //    playerState = PlayerState.Idle;
     //    attackState = AttackState.None;
-    //}
-
-    //public void OnRoll(InputAction.CallbackContext context)
-    //{
-    //    if (!canInput)
-    //        return;
-
-    //    // ������
-    //    // ���°� Jump, WallSlide�� �� �Ұ�
-    //    // ���°� Block�� ��� Block�� �ϱ� ���� ����Ǿ��� ������ �����·� ����
-    //    // ���� ���� ��� �ش� ������ �����ϰ� ����Ǿ��� ������ �����·� ����
-    //    switch (playerState)
-    //    {
-    //        case PlayerState.Jump:
-    //        case PlayerState.Attack:
-    //        case PlayerState.Hurt:
-    //        case PlayerState.Death:
-    //        case PlayerState.Fall:
-    //        case PlayerState.WallSlide:
-    //        case PlayerState.SuccessBlock:
-    //            return;
-    //        case PlayerState.Block:
-    //            isBlock = false;
-    //            break;
-    //    }
-
-    //    if (!isRoll && canRoll)
-    //        StartCoroutine(RollRoutine());
-    //}
-
-    //IEnumerator RollRoutine()
-    //{
-    //    isRoll = true;
-    //    canRoll = false;
-    //    rigid.gravityScale = 0f;
-    //    rigid.linearVelocityX = rollSpeed * sightDirection;
-    //    coll.enabled = false;
-    //    playerState = PlayerState.Roll;
-
-    //    yield return rollDuration;
-
-    //    isRoll = false;
-    //    rigid.gravityScale = 1f;
-    //    coll.enabled = true;
-    //    playerState = PlayerState.Idle;
-
-    //    yield return rollCoolTime;
-
-    //    canRoll = true;
     //}
 
     //public void OnBlock(InputAction.CallbackContext context)

@@ -42,4 +42,9 @@ public class PlayerAnimation : MonoBehaviour
         animator.SetBool("WallSlide", true);
         animator.SetFloat("AirSpeedY", -1f);
     }
+
+    public void PlayRoll()
+    {
+        animator.SetTrigger("Roll");
+    }
 }

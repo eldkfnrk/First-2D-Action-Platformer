@@ -10,6 +10,7 @@ public class PlayerData : ScriptableObject
     public float jumpPower;  // 점프 파워
     public float hitWallPower;  // 벽 점프 시 벽 반대로 튀는 파워
     public float fallSpeed;  // 떨어지는 속도
+    public float rollSpeed;  // 구르는 속도
 
     // 레이어 마스크
     public LayerMask groundLayer;  // 땅에 해당하는 레이어

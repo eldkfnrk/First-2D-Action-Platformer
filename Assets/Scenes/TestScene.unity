@@ -657,6 +657,7 @@ MonoBehaviour:
   PlayerAnimation: {fileID: 0}
   rigid: {fileID: 0}
   spriteR: {fileID: 0}
+  coll: {fileID: 0}
 --- !u!114 &1343013085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,9 +684,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerRuntimeData
   sightDirection: 0
   moveDirection: 0
+  cantInput: 0
   downKeyPressed: 0
+  jumpKeyDown: 0
+  rollKeyDown: 0
+  wallJumpVec: {x: 0, y: 0}
   isJump: 0
-  jumpPressed: 0
+  isRoll: 0
   isWall: 0
 --- !u!95 &1343013093
 Animator:
@@ -924,8 +929,8 @@ MonoBehaviour:
     m_ActionName: UI/TrackedDeviceOrientation
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Player, Assembly-CSharp
+      - m_Target: {fileID: 1343013085}
+        m_TargetAssemblyTypeName: PlayerInputManager, Assembly-CSharp
         m_MethodName: OnRoll
         m_Mode: 0
         m_Arguments:

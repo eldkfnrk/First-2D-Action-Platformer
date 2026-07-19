@@ -14,6 +14,7 @@ public class PlayerStateMachine : MonoBehaviour
         Jump,
         Fall,
         WallSlide,
+        Roll,
     }
     public State playerState;  // 변하는 데이터 값이지만 예외적으로 상태 데이터이기 때문에 직접 관리
 
@@ -25,6 +26,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerAnimation PlayerAnimation;  // 애니메이션 관련 스크립트
     public Rigidbody2D rigid;
     public SpriteRenderer spriteR;
+    public Collider2D coll;
 
     private void Awake()
     {
@@ -32,6 +34,7 @@ public class PlayerStateMachine : MonoBehaviour
         PlayerAnimation = GetComponent<PlayerAnimation>();
         rigid = GetComponent<Rigidbody2D>();
         spriteR = GetComponent<SpriteRenderer>();
+        coll = GetComponent<Collider2D>();
 
         states = new Dictionary<State, BaseState>();
         states.Add(State.Idle, new IdleState(this));
@@ -39,6 +42,7 @@ public class PlayerStateMachine : MonoBehaviour
         states.Add(State.Jump, new JumpState(this));
         states.Add(State.Fall, new FallState(this));
         states.Add(State.WallSlide, new WallSlideState(this));        
+        states.Add(State.Roll, new RollState(this));        
     }
 
     private void Start()
@@ -53,6 +57,12 @@ public class PlayerStateMachine : MonoBehaviour
         switch (playerState)
         {
             case State.Idle:
+                if (variableData.rollKeyDown)
+                {
+                    ChangeState(State.Roll);
+                    break;
+                }
+
                 if (CheckJumpOrFall())
                     break;
 
@@ -60,6 +70,12 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Run);
                 break;
             case State.Run:
+                if (variableData.rollKeyDown)
+                {
+                    ChangeState(State.Roll);
+                    break;
+                }
+
                 if (CheckJumpOrFall())
                     break;
 
@@ -88,7 +104,7 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Idle);
                 break;
             case State.WallSlide:
-                if (variableData.jumpPressed)
+                if (variableData.jumpKeyDown)
                 {
                     ChangeState(State.Jump);
                     break;
@@ -97,9 +113,19 @@ public class PlayerStateMachine : MonoBehaviour
                 if (variableData.groundCheck.collider != null)
                     ChangeState(State.Idle);                
                 break;
+            case State.Roll:
+                if (!variableData.isRoll)
+                {
+                    if (variableData.groundCheck.collider == null)
+                        ChangeState(State.Fall);
+                    else
+                        ChangeState(State.Idle);
+                }
+                break;
         }
 
         currentState.Update();
+        Debug.Log(playerState);
     }
 
     private void LateUpdate()
@@ -124,11 +150,11 @@ public class PlayerStateMachine : MonoBehaviour
     {
         // 점프 입력이 있었으면 점프 상태로 전환
         // 착지 상태가 아니면 떨어지는 상태로 전환
-        if (variableData.jumpPressed)
+        if (variableData.jumpKeyDown)
         {
             if (variableData.wallCheck.collider != null)
             {
-                variableData.jumpPressed = false;
+                variableData.jumpKeyDown = false;
                 return false;
             }
             else
@@ -172,12 +198,25 @@ public class PlayerStateMachine : MonoBehaviour
         variableData.cantInput = false;
     }
 
+    public void ChangeCanRoll()
+    {
+        StartCoroutine(RollRoutine());
+    }
+
+    IEnumerator RollRoutine()
+    {
+        yield return new WaitForSeconds(0.5f);
+        variableData.isRoll = false;
+        coll.enabled = true;
+        rigid.gravityScale = 1f;
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, Vector2.down * constantData.groundCheckDistance);
         Gizmos.color = Color.darkRed;
-        Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance);
+        Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance * variableData.sightDirection);
     }
 }
 
@@ -259,7 +298,6 @@ public class JumpState : BaseState
     {
         fsmController.playerState = PlayerStateMachine.State.Jump;
         fsmController.variableData.isJump = true;
-
         if (fsmController.variableData.isWall)
         {
             fsmController.variableData.wallJumpVec.x = -fsmController.variableData.sightDirection * fsmController.constantData.hitWallPower;
@@ -275,7 +313,7 @@ public class JumpState : BaseState
             fsmController.rigid.AddForce(Vector2.up * fsmController.constantData.jumpPower, ForceMode2D.Impulse);
         }
 
-        fsmController.variableData.jumpPressed = false;
+        fsmController.variableData.jumpKeyDown = false;
         fsmController.PlayerAnimation.PlayJump();
     }
 
@@ -340,5 +378,36 @@ public class WallSlideState : BaseState
     public override void Exit()
     {
         
+    }
+}
+
+public class RollState : BaseState
+{
+    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
+    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
+    public RollState(PlayerStateMachine controller) : base(controller) { }
+
+    public override void Enter()
+    {
+        fsmController.playerState = PlayerStateMachine.State.Roll;
+        fsmController.variableData.rollKeyDown = false;
+        fsmController.PlayerAnimation.PlayRoll();
+        fsmController.variableData.isRoll = true;
+        fsmController.coll.enabled = false;
+        fsmController.rigid.gravityScale = 0f;
+        fsmController.ChangeCanRoll();
+    }
+
+    public override void Update()
+    {
+        if (fsmController.variableData.wallCheck.collider != null)
+            fsmController.rigid.linearVelocityX = 0f;
+        else
+            fsmController.rigid.linearVelocityX = fsmController.constantData.rollSpeed * fsmController.variableData.sightDirection;
+    }
+
+    public override void Exit()
+    {
+        fsmController.rigid.linearVelocityX = 0f;
     }
 }
