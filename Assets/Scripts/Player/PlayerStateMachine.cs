@@ -15,6 +15,7 @@ public class PlayerStateMachine : MonoBehaviour
         Fall,
         WallSlide,
         Roll,
+        Attack,
     }
     public State playerState;  // 변하는 데이터 값이지만 예외적으로 상태 데이터이기 때문에 직접 관리
 
@@ -43,6 +44,7 @@ public class PlayerStateMachine : MonoBehaviour
         states.Add(State.Fall, new FallState(this));
         states.Add(State.WallSlide, new WallSlideState(this));        
         states.Add(State.Roll, new RollState(this));        
+        states.Add(State.Attack, new AttackState(this));        
     }
 
     private void Start()
@@ -57,6 +59,12 @@ public class PlayerStateMachine : MonoBehaviour
         switch (playerState)
         {
             case State.Idle:
+                if (variableData.atkCount > 0)
+                {
+                    ChangeState(State.Attack);
+                    break;
+                }
+
                 if (variableData.rollKeyDown)
                 {
                     ChangeState(State.Roll);
@@ -70,6 +78,12 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Run);
                 break;
             case State.Run:
+                if (variableData.atkCount > 0)
+                {
+                    ChangeState(State.Attack);
+                    break;
+                }
+
                 if (variableData.rollKeyDown)
                 {
                     ChangeState(State.Roll);
@@ -122,10 +136,11 @@ public class PlayerStateMachine : MonoBehaviour
                         ChangeState(State.Idle);
                 }
                 break;
+            case State.Attack:
+                break;
         }
 
         currentState.Update();
-        Debug.Log(playerState);
     }
 
     private void LateUpdate()
@@ -209,6 +224,23 @@ public class PlayerStateMachine : MonoBehaviour
         variableData.isRoll = false;
         coll.enabled = true;
         rigid.gravityScale = 1f;
+    }
+
+    public void Attack(int atkCount)
+    {
+        StartCoroutine(AttackRoutine(atkCount));
+    }
+
+    IEnumerator AttackRoutine(int atkCount)
+    {
+        yield return new WaitForSeconds(0.3f);
+
+        if (variableData.atkKeyDownCount == atkCount)
+        {
+            variableData.atkKeyDownCount = 0;
+            variableData.atkCount = 0;
+            variableData.isAttack = false;
+        }
     }
 
     private void OnDrawGizmos()
@@ -409,5 +441,31 @@ public class RollState : BaseState
     public override void Exit()
     {
         fsmController.rigid.linearVelocityX = 0f;
+    }
+}
+
+public class AttackState : BaseState
+{
+    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
+    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
+    public AttackState(PlayerStateMachine controller) : base(controller) { }
+
+    public override void Enter()
+    {
+        fsmController.playerState = PlayerStateMachine.State.Attack;
+        fsmController.Attack(++fsmController.variableData.atkCount);
+    }
+
+    public override void Update()
+    {
+        if (fsmController.variableData.atkKeyDownCount <= 3 && fsmController.variableData.atkKeyDownCount > 1)
+        {
+            fsmController.Attack(++fsmController.variableData.atkCount);
+        }
+    }
+
+    public override void Exit()
+    {
+        
     }
 }

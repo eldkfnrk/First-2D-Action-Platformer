@@ -21,4 +21,8 @@ public class PlayerRuntimeData : MonoBehaviour
 
     public bool isRoll;
     public bool isWall;
+    public bool isAttack;
+
+    public int atkKeyDownCount;
+    public int atkCount;
 }

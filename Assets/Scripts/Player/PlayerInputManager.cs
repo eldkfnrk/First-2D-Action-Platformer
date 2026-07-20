@@ -39,6 +39,15 @@ public class PlayerInputManager : MonoBehaviour
             variableData.rollKeyDown = true;
     }
 
+    public void OnAttack(InputAction.CallbackContext context)
+    {
+        if(context.started && variableData.atkKeyDownCount < 3)
+        {
+            variableData.isAttack = true;
+            ++variableData.atkKeyDownCount;
+        }
+    }
+
     //IEnumerator WallJumpRoutine()
     //{
     //    canInput = false;
