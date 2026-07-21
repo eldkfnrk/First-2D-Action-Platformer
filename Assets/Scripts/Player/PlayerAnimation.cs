@@ -47,4 +47,10 @@ public class PlayerAnimation : MonoBehaviour
     {
         animator.SetTrigger("Roll");
     }
+
+    public void PlayAttack(int atkCount)
+    {
+        string animationName = string.Format("Attack{0}", atkCount);
+        animator.SetTrigger(animationName);
+    }
 }

@@ -59,7 +59,7 @@ public class PlayerStateMachine : MonoBehaviour
         switch (playerState)
         {
             case State.Idle:
-                if (variableData.atkCount > 0)
+                if (variableData.atkKeyDownCount > 0)
                 {
                     ChangeState(State.Attack);
                     break;
@@ -78,7 +78,7 @@ public class PlayerStateMachine : MonoBehaviour
                     ChangeState(State.Run);
                 break;
             case State.Run:
-                if (variableData.atkCount > 0)
+                if (variableData.atkKeyDownCount > 0)
                 {
                     ChangeState(State.Attack);
                     break;
@@ -137,6 +137,15 @@ public class PlayerStateMachine : MonoBehaviour
                 }
                 break;
             case State.Attack:
+                // 공격이 종료되면 구르도록 설정
+                if (variableData.rollKeyDown && !variableData.atkRoutine)
+                {
+                    ChangeState(State.Roll);
+                    break;
+                }
+
+                if (!variableData.isAttack)
+                    ChangeState(State.Idle);
                 break;
         }
 
@@ -228,14 +237,33 @@ public class PlayerStateMachine : MonoBehaviour
 
     public void Attack(int atkCount)
     {
+        variableData.atkRoutine = true;
         StartCoroutine(AttackRoutine(atkCount));
     }
 
+    bool attackBox;
+    Vector2 attackBoxPos;
+
     IEnumerator AttackRoutine(int atkCount)
     {
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.2f);
 
-        if (variableData.atkKeyDownCount == atkCount)
+        // 깔끔하게 떨어지도록 수정 작업 필요
+        attackBox = true;
+        attackBoxPos.x = transform.position.x + 2f * variableData.sightDirection;
+        attackBoxPos.y = transform.position.y;
+        RaycastHit2D[] attackedEnemies = Physics2D.BoxCastAll(attackBoxPos, new Vector2(3f, 2f), 0f, Vector2.zero, 0f, constantData.enemyLayer);
+        foreach (RaycastHit2D attackedEnemy in attackedEnemies)
+        {
+            Debug.Log(attackedEnemy.collider.gameObject.name);
+        }
+
+        yield return new WaitForSeconds(0.25f);
+        attackBox = false;
+
+        variableData.atkRoutine = false;
+
+        if (variableData.rollKeyDown || variableData.atkKeyDownCount == atkCount)
         {
             variableData.atkKeyDownCount = 0;
             variableData.atkCount = 0;
@@ -245,10 +273,14 @@ public class PlayerStateMachine : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        if (!Application.isPlaying) return;  // 계속하여 에러가 발생해서 플레이 중이 아닐 땐 꺼놓도록 설정(이건 추후에 수정해서 씬에서 볼 수 있도록 변경 예정)
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, Vector2.down * constantData.groundCheckDistance);
         Gizmos.color = Color.darkRed;
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance * variableData.sightDirection);
+        Gizmos.color = Color.black;
+        if (attackBox)
+            Gizmos.DrawWireCube(attackBoxPos, new Vector2(3f, 2f));
     }
 }
 
@@ -387,13 +419,12 @@ public class FallState : BaseState
 
 public class WallSlideState : BaseState
 {
-    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
-    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
     public WallSlideState(PlayerStateMachine controller) : base(controller) { }
 
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.WallSlide;
+        fsmController.rigid.gravityScale = 1f;
         fsmController.variableData.isWall = true;
         fsmController.variableData.isJump = false;
         fsmController.PlayerAnimation.PlayWallSlide();
@@ -415,8 +446,6 @@ public class WallSlideState : BaseState
 
 public class RollState : BaseState
 {
-    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
-    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
     public RollState(PlayerStateMachine controller) : base(controller) { }
 
     public override void Enter()
@@ -446,21 +475,26 @@ public class RollState : BaseState
 
 public class AttackState : BaseState
 {
-    // 여기서 base는 부모 클래스의 생성자를 의미한다.(C# 문법)
-    // public으로 하지 않으면 이 생성자를 호출할 수 없기 때문에 특정 경우를 제외하고는 외부에서 초기화가 가능하도록 public 선언을 해야 한다.
     public AttackState(PlayerStateMachine controller) : base(controller) { }
 
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Attack;
-        fsmController.Attack(++fsmController.variableData.atkCount);
+        ++fsmController.variableData.atkCount;
+        fsmController.Attack(fsmController.variableData.atkCount);
+        fsmController.PlayerAnimation.PlayAttack(fsmController.variableData.atkCount);
     }
 
     public override void Update()
     {
+        if (fsmController.variableData.atkRoutine)
+            return;
+
         if (fsmController.variableData.atkKeyDownCount <= 3 && fsmController.variableData.atkKeyDownCount > 1)
         {
-            fsmController.Attack(++fsmController.variableData.atkCount);
+            ++fsmController.variableData.atkCount;
+            fsmController.Attack(fsmController.variableData.atkCount);
+            fsmController.PlayerAnimation.PlayAttack(fsmController.variableData.atkCount);
         }
     }
 

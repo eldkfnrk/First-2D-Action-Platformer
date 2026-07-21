@@ -23,6 +23,7 @@ public class PlayerRuntimeData : MonoBehaviour
     public bool isWall;
     public bool isAttack;
 
+    public bool atkRoutine;
     public int atkKeyDownCount;
     public int atkCount;
 }
