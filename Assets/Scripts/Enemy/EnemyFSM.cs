@@ -16,15 +16,10 @@ public class EnemyFSM : MonoBehaviour
         enemyStates.Add(Enemy.State.Move, new EnemyMoveState(this));
     }
 
-    private void Start()
-    {
-        currentState = enemyStates[Enemy.State.Move];
-        currentState.StateEnter();
-    }
-
     public void ChangeState(Enemy.State state)
     {
-        currentState.StateExit();
+        if (currentState != null)
+            currentState.StateExit();
         currentState = enemyStates[state];
         currentState.StateEnter();
     }
@@ -52,17 +47,17 @@ public class EnemyIdleState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemyType.enemyState = Enemy.State.Idle;
-        fsmController.enemyType.actionTimer += Time.deltaTime;
+        fsmController.enemyType.enemyAnimation.PlayIdle();
     }
 
     public override void StateUpdate()
     {
-        fsmController.enemyType.actionTimer += Time.deltaTime;
+        
     }
 
     public override void StateExit()
     {
-        fsmController.enemyType.actionTimer = 0f;
+        
     }
 }
 
@@ -73,17 +68,76 @@ public class EnemyMoveState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemyType.enemyState = Enemy.State.Move;
-        fsmController.enemyType.actionTimer += Time.deltaTime;
+        fsmController.enemyType.enemyAnimation.PlayMove();
     }
 
     public override void StateUpdate()
     {
-        fsmController.enemyType.Move();
-        fsmController.enemyType.actionTimer += Time.deltaTime;
+        fsmController.enemyType.EnemyMove();
     }
 
     public override void StateExit()
     {
-        fsmController.enemyType.actionTimer = 0f;
+        
+    }
+}
+
+public class EnemyAttackState : EnemyBaseState
+{
+    public EnemyAttackState(EnemyFSM fsmController) : base(fsmController) { }
+
+    public override void StateEnter()
+    {
+        fsmController.enemyType.enemyState = Enemy.State.Attack;
+    }
+
+    public override void StateUpdate()
+    {
+        
+    }
+
+    public override void StateExit()
+    {
+
+    }
+}
+
+public class EnemyHitState : EnemyBaseState
+{
+    public EnemyHitState(EnemyFSM fsmController) : base(fsmController) { }
+
+    public override void StateEnter()
+    {
+        fsmController.enemyType.enemyState = Enemy.State.Hit;
+    }
+
+    public override void StateUpdate()
+    {
+        
+    }
+
+    public override void StateExit()
+    {
+
+    }
+}
+
+public class EnemyDeathState : EnemyBaseState
+{
+    public EnemyDeathState(EnemyFSM fsmController) : base(fsmController) { }
+
+    public override void StateEnter()
+    {
+        fsmController.enemyType.enemyState = Enemy.State.Death;
+    }
+
+    public override void StateUpdate()
+    {
+        
+    }
+
+    public override void StateExit()
+    {
+
     }
 }

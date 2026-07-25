@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 936870de9fc2ebc498cdd28395930b47, type: 3}
-  m_Name: EnemyAData
+  m_Name: EnemyBData
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  moveSpeed: 3
+  moveSpeed: 0
   groundLayer:
     serializedVersion: 2
-    m_Bits: 64
-  frontCheckDistance: 0.8
-  floorCheckDistance: 0.8
+    m_Bits: 0
+  frontCheckDistance: 0
+  floorCheckDistance: 0

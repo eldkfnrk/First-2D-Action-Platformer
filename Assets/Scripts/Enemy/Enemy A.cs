@@ -1,8 +1,10 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyA : Enemy
 {
     // 간단하게 캐릭터 상태 전환 시험용으로 일정 시간이 지나면 상태가 변하도록 만들어 보고 이를 바탕으로 FSM을 적용해 볼 예정
+    // 이 적은 이동과 피격, 사망 상태가 있다.
 
     private void Awake()
     {
@@ -12,37 +14,60 @@ public class EnemyA : Enemy
         variableData = GetComponent<EnemyRuntimeData>();
         enemyAnimation = GetComponent<EnemyAnimation>();
 
-        enemyAnimation.PlayIdle();  // 이 적은 애니메이션이 하나이기 때문에 딱 한 번 애니메이션을 호출한다.
+        variableData.spawnLoc = transform.position;
 
         variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
+    }
+
+    private void Start()
+    {
+        fsm.ChangeState(State.Move);
     }
 
     private void Update()
     {
         switch (enemyState)
         {
-            case State.Idle:
-                if (actionTimer > 2f)
+            case State.Move:
+                if (variableData.isHit)
+                    fsm.ChangeState(State.Hit);
+                break;
+            case State.Hit:
+                if (!variableData.isHit)
                     fsm.ChangeState(State.Move);
                 break;
-            case State.Move:
-                if (actionTimer > 2f)
-                    fsm.ChangeState(State.Idle);
-                break;
         }
+
 
         fsm.currentState.StateUpdate();
     }
 
+    public void HitStart()
+    {
+        StartCoroutine(HitRoutine());
+    }
+
+    IEnumerator HitRoutine()
+    {
+        // 넉백
+        // 추가 공격을 받지 못하도록 무적 상태 만들기
+
+        yield return new WaitForSeconds(0.2f);
+
+        variableData.isHit = false;
+        // 무적 상태 멈추기
+    }
+
     private void FixedUpdate()
     {
-        variableData.frontCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.frontCheckDistance, constantData.groundLayer);
+        WallFloorCheck();
     }
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(transform.position, Vector2.right * variableData.sightDirection * constantData.frontCheckDistance);
+        //Gizmos.color = Color.red;
+        //Gizmos.DrawRay(transform.position, Vector2.right * variableData.sightDirection * constantData.frontCheckDistance);
+        //Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
     }
 
     // 모든 적의 공통점
