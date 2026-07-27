@@ -218,7 +218,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     IEnumerator CantInputChangeRoutine()
     {
-        yield return new WaitForSeconds(0.35f);
+        yield return new WaitForSeconds(0.2f);
         variableData.cantInput = false;
     }
 

@@ -16,5 +16,11 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  detectRange: {x: 0, y: 0}
+  moveMaxRange: 5
+  maxDistance: 0
   frontCheckDistance: 0.8
   floorCheckDistance: 0.8

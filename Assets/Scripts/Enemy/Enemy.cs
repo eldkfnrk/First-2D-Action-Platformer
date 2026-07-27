@@ -2,10 +2,14 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
+    // 모든 적의 공통점
+    // 적과 충돌 시 플레이어는 반드시 뒤로 넉백이 일어나며 데미지를 입는다.
+
     public enum State
     {
         Idle,
         Move,
+        Chase,
         Attack,
         Hit,
         Death,
@@ -29,19 +33,10 @@ public class Enemy : MonoBehaviour
     }
 
     // 플레이어 탐지
-    public void DetectPlayer()
+    public bool DetectPlayer()
     {
-
-    }
-
-    // 모든 적이 공통적으로 갖는 동작 - 이동, 타격, 피격, 사망
-
-    // 이동
-    public void EnemyMove()
-    {
-        rigid.linearVelocityX = constantData.moveSpeed * variableData.sightDirection;
-        if (variableData.frontCheck.collider != null || variableData.floorCheck.collider == null)
-            ChangeDirection();
+        variableData.detectPlayer = Physics2D.BoxCast(transform.position, constantData.detectRange, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        return variableData.detectPlayer.collider != null;
     }
 
     // 바라보는 방향 전환
@@ -49,6 +44,33 @@ public class Enemy : MonoBehaviour
     {
         variableData.sightDirection *= -1f;
         sprtieR.flipX = !sprtieR.flipX;
+    }
+
+    // 모든 적이 공통적으로 갖는 동작 - 이동, 멈춤, 타격, 피격, 사망
+
+    // 일반 이동
+    public void EnemyMove()
+    {
+        rigid.linearVelocityX = constantData.moveSpeed * variableData.sightDirection;
+        if (variableData.esacpeRange || variableData.frontCheck.collider != null || variableData.floorCheck.collider == null)
+            ChangeDirection();
+    }
+
+    // 추적 이동
+    public void EnemyChaseMove()
+    {
+        variableData.playerEnemyXDistance = variableData.detectPlayer.transform.position.x - transform.position.x;
+        variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
+        variableData.playerEnemyXDistance = Mathf.Abs(variableData.playerEnemyXDistance);
+        rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed;
+        if (variableData.moveDir != variableData.sightDirection)
+            ChangeDirection();
+    }
+
+    // 멈춤
+    public void EnemyStop()
+    {
+        rigid.linearVelocityX = 0f;
     }
 
     // 피격

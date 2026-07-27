@@ -12,9 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 936870de9fc2ebc498cdd28395930b47, type: 3}
   m_Name: EnemyBData
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  moveSpeed: 0
+  moveSpeed: 2.5
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
-  frontCheckDistance: 0
-  floorCheckDistance: 0
+    m_Bits: 64
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  detectRange: {x: 5, y: 5}
+  moveMaxRange: 6
+  maxDistance: 15
+  frontCheckDistance: 0.8
+  floorCheckDistance: 0.8
