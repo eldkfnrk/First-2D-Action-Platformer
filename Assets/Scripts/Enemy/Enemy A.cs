@@ -38,7 +38,7 @@ public class EnemyA : Enemy
                 break;
         }
 
-
+        fsm.ChangeTransitions();
         fsm.currentState.StateUpdate();
     }
 

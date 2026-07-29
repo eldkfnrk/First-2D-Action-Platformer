@@ -35,7 +35,7 @@ public class PlayerInputManager : MonoBehaviour
 
     public void OnRoll(InputAction.CallbackContext context)
     {
-        if (context.started && !variableData.isRoll)
+        if (context.started && !variableData.isRoll && !variableData.isJump)
             variableData.rollKeyDown = true;
     }
 

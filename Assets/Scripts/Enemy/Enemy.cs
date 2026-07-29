@@ -10,6 +10,7 @@ public class Enemy : MonoBehaviour
         Idle,
         Move,
         Chase,
+        GoBack,
         Attack,
         Hit,
         Death,
@@ -24,7 +25,7 @@ public class Enemy : MonoBehaviour
     public EnemyAnimation enemyAnimation;
     public float actionTimer;
 
-    public void WallFloorCheck()
+    public virtual void WallFloorCheck()
     {
         variableData.floorCheckOrigin.x = transform.position.x + 0.2f * variableData.sightDirection;
         variableData.floorCheckOrigin.y = transform.position.y;
@@ -35,7 +36,9 @@ public class Enemy : MonoBehaviour
     // 플레이어 탐지
     public bool DetectPlayer()
     {
-        variableData.detectPlayer = Physics2D.BoxCast(transform.position, constantData.detectRange, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
+        variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
+        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
         return variableData.detectPlayer.collider != null;
     }
 
@@ -52,7 +55,7 @@ public class Enemy : MonoBehaviour
     public void EnemyMove()
     {
         rigid.linearVelocityX = constantData.moveSpeed * variableData.sightDirection;
-        if (variableData.esacpeRange || variableData.frontCheck.collider != null || variableData.floorCheck.collider == null)
+        if (variableData.frontCheck.collider != null || variableData.floorCheck.collider == null)
             ChangeDirection();
     }
 

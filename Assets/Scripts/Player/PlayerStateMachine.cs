@@ -16,7 +16,18 @@ public class PlayerStateMachine : MonoBehaviour
         WallSlide,
         Roll,
         Attack,
+        Hit,
+        Death,
     }
+    // OverlapBox는 매번 배열 객체를 힙 메모리에 생성하기 때문에 GC 할당이 발생 -> 이는 성능 감소로 이어지게 된다.
+    // GC로 인한 성능 감소를 막기 위해 미리 배열을 만들고 여기에 OverlapBox 배열 객체를 전달하는 방식을 사용해야 한다.
+    // 과거에는 이를 OverlapBoxNonAlloc이라는 함수가 대신하였으나 유니티 6에 들어오고 해당 함수를 더 이상 사용하지 않게 되었다.
+    // 그렇지만 이와 동일한 성능을 내도록 하는 방법이 ContactFilter를 이용하여 OverlapBoxNonAlloc 함수의 기능을 구현하는 것이다.
+    // ContactFilter를 통해 검사할 레이어, 트리거 여부 등을 지정하고 이를 매개 변수로 전달하여 동작하게 한다.
+    // 원래는 변하는 데이터를 저장하는 곳에 있어야 하지만 이것은 다른 곳에서는 사용하지 않을 것이기 때문에 따로 저장
+    ContactFilter2D hitFilter;
+    Collider2D[] hitEnemies;  
+
     public State playerState;  // 변하는 데이터 값이지만 예외적으로 상태 데이터이기 때문에 직접 관리
 
     Dictionary<State, BaseState> states;
@@ -31,6 +42,11 @@ public class PlayerStateMachine : MonoBehaviour
 
     private void Awake()
     {
+        hitEnemies = new Collider2D[15];
+        hitFilter.useLayerMask = true;
+        hitFilter.useTriggers = false;
+        hitFilter.SetLayerMask(constantData.enemyLayer);
+
         variableData = GetComponent<PlayerRuntimeData>();
         PlayerAnimation = GetComponent<PlayerAnimation>();
         rigid = GetComponent<Rigidbody2D>();
@@ -163,6 +179,14 @@ public class PlayerStateMachine : MonoBehaviour
         variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
     }
 
+    // 플레이어 공격과 해당 공격에 피격당한 적
+    // 플레이어 공격 시 BoxCastAll을 통해 BoxCast 범위에 들어온 모든 적들은 피격 판정을 전달
+    // 피격 판정을 실행할 방법은 2가지이다.
+    // 1번 - BoxCastAll을 통해 획득한 적들의 피격 함수를 직접 호출하여 피격 진행
+    // 2번 - BoxCastAll을 통해 획득한 적들의 명단을 습득하여 게임 매니저에게 전달하고 게임 매니저가 이 명단에 있는 적들에게 통보
+    // 1번 방법은 너무 엮이는 것이 아닌가 하는 우려가 있고 2번 방법은 게임 매니저가 각 적에게 어떻게 통보해야 하는가를 고려해야 하는 정보의 부재가 있다.
+    // 우선 2번 방법을 중심으로 진행하되 진행이 더디다면 1번 혹은 AI에게 질의하는 방식으로 진행할 예정
+
     void ChangeState(State state)
     {
         currentState.Exit();
@@ -218,7 +242,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     IEnumerator CantInputChangeRoutine()
     {
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.3f);
         variableData.cantInput = false;
     }
 
@@ -242,23 +266,11 @@ public class PlayerStateMachine : MonoBehaviour
     }
 
     bool attackBox;
-    Vector2 attackBoxPos;
 
     IEnumerator AttackRoutine(int atkCount)
     {
-        yield return new WaitForSeconds(0.2f);
-
-        // 깔끔하게 떨어지도록 수정 작업 필요
         attackBox = true;
-        attackBoxPos.x = transform.position.x + 2f * variableData.sightDirection;
-        attackBoxPos.y = transform.position.y;
-        RaycastHit2D[] attackedEnemies = Physics2D.BoxCastAll(attackBoxPos, new Vector2(3f, 2f), 0f, Vector2.zero, 0f, constantData.enemyLayer);
-        foreach (RaycastHit2D attackedEnemy in attackedEnemies)
-        {
-            Debug.Log(attackedEnemy.collider.gameObject.name);
-        }
-
-        yield return new WaitForSeconds(0.25f);
+        yield return new WaitForSeconds(0.45f);
         attackBox = false;
 
         variableData.atkRoutine = false;
@@ -271,6 +283,18 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
+    // 지금까지는 공격 판정을 코루틴 내에서 시간 단위로 끊어서 해야만 한다고 생각하였는데 AI와의 질의응답을 거치다 우연히 공격 판정을 애니메이션 이벤트로 처리하는 것이 좋다는 것을 알아내었다.
+    public void AttackHitJudege()
+    {
+        variableData.attackBoxPos.x = transform.position.x + 2f * variableData.sightDirection;
+        variableData.attackBoxPos.y = transform.position.y;
+        int hitCount = Physics2D.OverlapBox(variableData.attackBoxPos, new Vector2(3f, 2f), 0f, hitFilter, hitEnemies);
+
+        // 게임 매니저에 전달 - 게임 매니저가 전투 판정을 관할
+        if (hitCount != 0)
+            GameManager.instance.AttackEnemies(hitEnemies);
+    }
+
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;  // 계속하여 에러가 발생해서 플레이 중이 아닐 땐 꺼놓도록 설정(이건 추후에 수정해서 씬에서 볼 수 있도록 변경 예정)
@@ -280,7 +304,7 @@ public class PlayerStateMachine : MonoBehaviour
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance * variableData.sightDirection);
         Gizmos.color = Color.black;
         if (attackBox)
-            Gizmos.DrawWireCube(attackBoxPos, new Vector2(3f, 2f));
+            Gizmos.DrawWireCube(variableData.attackBoxPos, new Vector2(3f, 2f));
     }
 }
 
@@ -317,7 +341,6 @@ public class IdleState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Idle;
-        fsmController.variableData.isJump = false;
         fsmController.rigid.gravityScale = 1f;
         fsmController.PlayerAnimation.PlayIdle();
     }
@@ -390,6 +413,7 @@ public class JumpState : BaseState
     {
         if (fsmController.variableData.moveDirection == 0f)
             fsmController.rigid.linearVelocityX = 0f;
+        fsmController.variableData.isJump = false;
     }
 }
 
@@ -414,6 +438,7 @@ public class FallState : BaseState
     {
         if (fsmController.variableData.moveDirection == 0f)
             fsmController.rigid.linearVelocityX = 0f;
+        fsmController.variableData.isJump = false;
     }
 }
 
@@ -452,15 +477,16 @@ public class RollState : BaseState
     {
         fsmController.playerState = PlayerStateMachine.State.Roll;
         fsmController.variableData.rollKeyDown = false;
+        fsmController.rigid.gravityScale = 0f;
         fsmController.PlayerAnimation.PlayRoll();
         fsmController.variableData.isRoll = true;
         fsmController.coll.enabled = false;
-        fsmController.rigid.gravityScale = 0f;
         fsmController.ChangeCanRoll();
     }
 
     public override void Update()
     {
+        fsmController.rigid.linearVelocityY = 0f;
         if (fsmController.variableData.wallCheck.collider != null)
             fsmController.rigid.linearVelocityX = 0f;
         else

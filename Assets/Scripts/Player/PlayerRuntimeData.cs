@@ -19,6 +19,8 @@ public class PlayerRuntimeData : MonoBehaviour
     public Vector2 wallJumpVec;
     public bool isJump;
 
+    public Vector2 attackBoxPos;
+
     public bool isRoll;
     public bool isWall;
     public bool isAttack;

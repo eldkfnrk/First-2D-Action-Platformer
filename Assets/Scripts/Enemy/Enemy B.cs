@@ -31,37 +31,61 @@ public class EnemyB : Enemy
 
     private void Update()
     {
+        Debug.Log(enemyState);
         switch (enemyState)
         {
             case State.Idle:
-                if (!ChangeStateChase())
-                    ChangeAction(State.Move);
                 actionTimer += Time.deltaTime;
+                if (ChangeStateChase())
+                {
+                    actionTimer = 0f;
+                    fsm.ChangeState(State.Move);
+                }
+                ChangeAction(State.Move);
                 break;
             case State.Move:
                 if (ChangeStateChase())
-                    break;
-
-                if (variableData.goBack)
                 {
-                    if (Mathf.Approximately(variableData.spawnLoc.x, transform.position.x))
-                        variableData.goBack = false;
+                    actionTimer = 0f;
                     break;
                 }
 
-                ChangeAction(State.Idle);
                 actionTimer += Time.deltaTime;
+
+                ChangeAction(State.Idle);
                 break;
             case State.Chase:
-                if (variableData.goBack)
+                if (variableData.cantMove)
                 {
-                    ChangeDirection();
-                    fsm.ChangeState(State.Move);
+                    actionTimer += Time.deltaTime;
+                    if (actionTimer >= 1f)
+                    {
+                        actionTimer = 0f;
+                        fsm.ChangeState(State.GoBack);
+                    }
+                }
+                break;
+            case State.GoBack:
+                if (ChangeStateChase())
+                {
+                    fsm.ChangeState(State.Chase);
+                    break;
+                }
+
+                if (Mathf.Abs(variableData.spawnLoc.x - transform.position.x) < 0.1f)
+                    fsm.ChangeState(State.Idle);
+                break;
+            case State.Hit:
+                actionTimer += Time.deltaTime;
+                if (actionTimer > 0.5f)
+                {
                     actionTimer = 0f;
+                    fsm.ChangeState(State.Idle);
                 }
                 break;
         }
 
+        fsm.ChangeTransitions();
         fsm.currentState.StateUpdate();
     }
 
@@ -75,7 +99,7 @@ public class EnemyB : Enemy
         if (DetectPlayer())
         {
             fsm.ChangeState(State.Chase);
-            variableData.goBack = false;
+            variableData.cantMove = false;
             actionTimer = 0f;
             return true;
         }
@@ -96,5 +120,11 @@ public class EnemyB : Enemy
         {
             fsm.ChangeState(changeState);
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        //Gizmos.color = Color.red;
+        //Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
     }
 }

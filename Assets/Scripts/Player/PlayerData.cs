@@ -18,4 +18,6 @@ public class PlayerData : ScriptableObject
 
     public float groundCheckDistance;  // 땅을 체크할 거리
     public float wallCheckDistance;  // 벽을 체크할 거리
+
+    public Vector2 attackBoxSize;  // 공격 범위
 }
