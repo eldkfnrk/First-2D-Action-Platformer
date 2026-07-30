@@ -292,7 +292,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         // 게임 매니저에 전달 - 게임 매니저가 전투 판정을 관할
         if (hitCount != 0)
-            GameManager.instance.AttackEnemies(hitEnemies);
+            GameManager.instance.AttackEnemies(hitEnemies, variableData.attackBoxPos);
     }
 
     private void OnDrawGizmos()

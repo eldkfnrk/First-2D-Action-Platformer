@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
@@ -49,6 +50,11 @@ public class Enemy : MonoBehaviour
         sprtieR.flipX = !sprtieR.flipX;
     }
 
+    protected void GetKnockBackDir()
+    {
+        variableData.knockbackDir = (transform.position - GameManager.instance.player.transform.position).normalized;
+    }
+
     // 모든 적이 공통적으로 갖는 동작 - 이동, 멈춤, 타격, 피격, 사망
 
     // 일반 이동
@@ -62,7 +68,7 @@ public class Enemy : MonoBehaviour
     // 추적 이동
     public void EnemyChaseMove()
     {
-        variableData.playerEnemyXDistance = variableData.detectPlayer.transform.position.x - transform.position.x;
+        variableData.playerEnemyXDistance = GameManager.instance.player.transform.position.x - transform.position.x;
         variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
         variableData.playerEnemyXDistance = Mathf.Abs(variableData.playerEnemyXDistance);
         rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed;
@@ -79,7 +85,18 @@ public class Enemy : MonoBehaviour
     // 피격
     public void EnemyHit()
     {
+        StartCoroutine(HitRoutine());
+    }
 
+    // 피격 행동이 다른 적이 있을 수 있기에 가상 함수로 선언
+    protected virtual IEnumerator HitRoutine()
+    {
+        // 피격 시 넉백 발생
+        GetKnockBackDir();
+        rigid.AddForce(variableData.knockbackDir * constantData.knockbackPower, ForceMode2D.Impulse);
+        enemyAnimation.PlayIdle();  // 대부분의 적이 피격 애니메이션이 없어서 Idle 애니메이션 사용(피격이 있는 적은 따로 override로 수정)
+        yield return new WaitForSeconds(0.25f);
+        variableData.isHit = false;
     }
 
     // 사망

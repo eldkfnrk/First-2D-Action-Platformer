@@ -31,7 +31,6 @@ public class EnemyB : Enemy
 
     private void Update()
     {
-        Debug.Log(enemyState);
         switch (enemyState)
         {
             case State.Idle:
@@ -76,12 +75,9 @@ public class EnemyB : Enemy
                     fsm.ChangeState(State.Idle);
                 break;
             case State.Hit:
-                actionTimer += Time.deltaTime;
-                if (actionTimer > 0.5f)
-                {
-                    actionTimer = 0f;
-                    fsm.ChangeState(State.Idle);
-                }
+                // 공격을 당하면 반드시 플레이어를 쫓도록 설정
+                if (!variableData.isHit)
+                    fsm.ChangeState(State.Chase);
                 break;
         }
 

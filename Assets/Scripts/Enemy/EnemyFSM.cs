@@ -27,13 +27,13 @@ public class EnemyFSM : MonoBehaviour
         // 예를 들어 피격과 사망 상태 돌입은 거의 모든 상황에서 동시에 진행해야 하기 때문에 여기서 상태 전환을 수행하는 것이다.
         // 그리고 이 피격과 사망에서도 우선 순위를 둬서 순서대로 체크하도록 하여야 한다.
         // 우선 순위는 사망 - 피격 순이다.
-        if (enemy.variableData.isDead)
+        if (enemy.variableData.isDead && enemy.enemyState != Enemy.State.Death)
         {
             ChangeState(Enemy.State.Death);
             return;
         }
 
-        if (enemy.variableData.isHit)
+        if (enemy.variableData.isHit && enemy.enemyState != Enemy.State.Hit)
         {
             ChangeState(Enemy.State.Hit);
             return;
@@ -186,10 +186,8 @@ public class EnemyHitState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.Hit;
-        fsmController.enemy.actionTimer = 0f;
         fsmController.enemy.EnemyStop();
-        fsmController.enemy.variableData.isHit = false;
-        Debug.Log("Hit" + fsmController.gameObject.name);
+        fsmController.enemy.EnemyHit();
     }
 
     public override void StateUpdate()

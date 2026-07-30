@@ -42,22 +42,6 @@ public class EnemyA : Enemy
         fsm.currentState.StateUpdate();
     }
 
-    public void HitStart()
-    {
-        StartCoroutine(HitRoutine());
-    }
-
-    IEnumerator HitRoutine()
-    {
-        // 넉백
-        // 추가 공격을 받지 못하도록 무적 상태 만들기
-
-        yield return new WaitForSeconds(0.2f);
-
-        variableData.isHit = false;
-        // 무적 상태 멈추기
-    }
-
     private void FixedUpdate()
     {
         WallFloorCheck();

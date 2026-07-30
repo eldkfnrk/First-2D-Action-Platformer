@@ -41,7 +41,7 @@ public class PlayerInputManager : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if(context.started && variableData.atkKeyDownCount < 3)
+        if(context.started && variableData.atkKeyDownCount < 3 && !variableData.isRoll)
         {
             variableData.isAttack = true;
             ++variableData.atkKeyDownCount;

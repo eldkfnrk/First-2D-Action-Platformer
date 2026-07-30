@@ -19,8 +19,9 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
-  detectRange: {x: 5, y: 5}
-  moveMaxRange: 6
+  detectPlayerBoxOffset: {x: 0, y: 0}
+  detectPlayerBoxSize: {x: 5, y: 2.5}
   maxDistance: 15
+  knockbackPower: 10
   frontCheckDistance: 0.8
   floorCheckDistance: 0.8

@@ -13,6 +13,8 @@ public class EnemyData : ScriptableObject
 
     public float maxDistance;  // 플레이어와 적 간 최대 거리(이 거리를 넘으면 더 이상 추적하지 않는다.)
 
+    public float knockbackPower;
+
     public float frontCheckDistance;
     public float floorCheckDistance;
 }

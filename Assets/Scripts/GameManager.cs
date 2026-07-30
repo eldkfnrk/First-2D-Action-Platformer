@@ -58,7 +58,7 @@ public class GameManager : MonoBehaviour
         
     }
 
-    public void AttackEnemies(Collider2D[] attackedEnemies)
+    public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackStartPos)
     {
         // 인자로 받은 적들에게 자신의 피격 사실을 전달
         foreach(Collider2D attackedEnemy in attackedEnemies)
