@@ -25,3 +25,4 @@ MonoBehaviour:
     m_Bits: 128
   groundCheckDistance: 1
   wallCheckDistance: 0.5
+  attackBoxSize: {x: 1.5, y: 1.6}

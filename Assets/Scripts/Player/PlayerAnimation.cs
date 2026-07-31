@@ -50,6 +50,7 @@ public class PlayerAnimation : MonoBehaviour
 
     public void PlayAttack(int atkCount)
     {
+        animator.SetInteger("AnimState", 0);
         string animationName = string.Format("Attack{0}", atkCount);
         animator.SetTrigger(animationName);
     }

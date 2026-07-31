@@ -24,13 +24,9 @@ public class EnemyB : Enemy
         variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
     }
 
-    private void Start()
-    {
-        fsm.ChangeState(State.Move);
-    }
-
     private void Update()
     {
+        fsm.ChangeTransitions();
         switch (enemyState)
         {
             case State.Idle:
@@ -80,8 +76,6 @@ public class EnemyB : Enemy
                     fsm.ChangeState(State.Chase);
                 break;
         }
-
-        fsm.ChangeTransitions();
         fsm.currentState.StateUpdate();
     }
 
@@ -120,7 +114,11 @@ public class EnemyB : Enemy
 
     private void OnDrawGizmos()
     {
-        //Gizmos.color = Color.red;
-        //Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
+        if (!Application.isPlaying) return;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
+        Gizmos.color = Color.darkGray;
+        Gizmos.DrawRay(transform.position, Vector2.right * variableData.sightDirection * constantData.frontCheckDistance);
+        Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
     }
 }

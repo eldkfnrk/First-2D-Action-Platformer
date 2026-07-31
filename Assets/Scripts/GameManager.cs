@@ -58,14 +58,18 @@ public class GameManager : MonoBehaviour
         
     }
 
-    public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackStartPos)
+    public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackDir)
     {
+        EnemyRuntimeData enemyVariableData;
+
         // 인자로 받은 적들에게 자신의 피격 사실을 전달
         foreach(Collider2D attackedEnemy in attackedEnemies)
         {
             if (attackedEnemy == null)
                 break;
-            attackedEnemy.gameObject.GetComponent<EnemyRuntimeData>().isHit = true;
+            enemyVariableData = attackedEnemy.gameObject.GetComponent<EnemyRuntimeData>();
+            enemyVariableData.isHit = true;
+            enemyVariableData.knockbackDir = attackDir;
         }
     }
 

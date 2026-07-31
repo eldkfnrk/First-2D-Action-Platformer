@@ -286,13 +286,13 @@ public class PlayerStateMachine : MonoBehaviour
     // 지금까지는 공격 판정을 코루틴 내에서 시간 단위로 끊어서 해야만 한다고 생각하였는데 AI와의 질의응답을 거치다 우연히 공격 판정을 애니메이션 이벤트로 처리하는 것이 좋다는 것을 알아내었다.
     public void AttackHitJudege()
     {
-        variableData.attackBoxPos.x = transform.position.x + 2f * variableData.sightDirection;
+        variableData.attackBoxPos.x = transform.position.x + variableData.sightDirection;
         variableData.attackBoxPos.y = transform.position.y;
-        int hitCount = Physics2D.OverlapBox(variableData.attackBoxPos, new Vector2(3f, 2f), 0f, hitFilter, hitEnemies);
+        int hitCount = Physics2D.OverlapBox(variableData.attackBoxPos, constantData.attackBoxSize, 0f, hitFilter, hitEnemies);
 
         // 게임 매니저에 전달 - 게임 매니저가 전투 판정을 관할
         if (hitCount != 0)
-            GameManager.instance.AttackEnemies(hitEnemies, variableData.attackBoxPos);
+            GameManager.instance.AttackEnemies(hitEnemies, Vector2.right * variableData.sightDirection);  // 일반 공격이기 때문에 플레이어가 바라보는 방향으로 공격을 했을 것이기에 이와 같은 값을 공격 방향으로 전달
     }
 
     private void OnDrawGizmos()
@@ -304,7 +304,7 @@ public class PlayerStateMachine : MonoBehaviour
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance * variableData.sightDirection);
         Gizmos.color = Color.black;
         if (attackBox)
-            Gizmos.DrawWireCube(variableData.attackBoxPos, new Vector2(3f, 2f));
+            Gizmos.DrawWireCube(variableData.attackBoxPos, constantData.attackBoxSize);
     }
 }
 

@@ -4,9 +4,12 @@ using UnityEngine;
 public class EnemyData : ScriptableObject
 {
     public float moveSpeed;
+    public float maxHP;
 
     public LayerMask groundLayer;
     public LayerMask playerLayer;
+
+    public float floorCheckOffsetX;
 
     public Vector2 detectPlayerBoxOffset;  // 플레이어를 탐지하는 박스의 중앙 위치를 지정하는 변수
     public Vector2 detectPlayerBoxSize;  // 플레이어를 탐지하는 박스의 크기를 저장하는 변수

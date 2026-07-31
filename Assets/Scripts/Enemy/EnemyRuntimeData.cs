@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class EnemyRuntimeData : MonoBehaviour
 {
+    public float curHP;
+    
     public float sightDirection;
 
     public Vector3 spawnLoc;

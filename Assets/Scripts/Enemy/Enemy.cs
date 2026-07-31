@@ -26,9 +26,21 @@ public class Enemy : MonoBehaviour
     public EnemyAnimation enemyAnimation;
     public float actionTimer;
 
+    protected void Start()
+    {
+        fsm.ChangeState(State.Move);
+    }
+
+    protected virtual void OnEnable()
+    {
+        variableData.curHP = constantData.maxHP;
+        variableData.isDead = false;
+        fsm.ChangeState(State.Move);
+    }
+
     public virtual void WallFloorCheck()
     {
-        variableData.floorCheckOrigin.x = transform.position.x + 0.2f * variableData.sightDirection;
+        variableData.floorCheckOrigin.x = transform.position.x + constantData.floorCheckOffsetX * variableData.sightDirection;
         variableData.floorCheckOrigin.y = transform.position.y;
         variableData.frontCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.frontCheckDistance, constantData.groundLayer);
         variableData.floorCheck = Physics2D.Raycast(variableData.floorCheckOrigin, Vector2.down, constantData.floorCheckDistance, constantData.groundLayer);
@@ -48,11 +60,6 @@ public class Enemy : MonoBehaviour
     {
         variableData.sightDirection *= -1f;
         sprtieR.flipX = !sprtieR.flipX;
-    }
-
-    protected void GetKnockBackDir()
-    {
-        variableData.knockbackDir = (transform.position - GameManager.instance.player.transform.position).normalized;
     }
 
     // 모든 적이 공통적으로 갖는 동작 - 이동, 멈춤, 타격, 피격, 사망
@@ -85,6 +92,7 @@ public class Enemy : MonoBehaviour
     // 피격
     public void EnemyHit()
     {
+        variableData.curHP -= 1f;  // 지금 당장 플레이어의 공격 데미지가 없기 때문에 임시로 1f라는 값을 써서 피격 시 1f씩 피가 닳도록 설정
         StartCoroutine(HitRoutine());
     }
 
@@ -92,16 +100,24 @@ public class Enemy : MonoBehaviour
     protected virtual IEnumerator HitRoutine()
     {
         // 피격 시 넉백 발생
-        GetKnockBackDir();
         rigid.AddForce(variableData.knockbackDir * constantData.knockbackPower, ForceMode2D.Impulse);
         enemyAnimation.PlayIdle();  // 대부분의 적이 피격 애니메이션이 없어서 Idle 애니메이션 사용(피격이 있는 적은 따로 override로 수정)
-        yield return new WaitForSeconds(0.25f);
+        yield return new WaitForSeconds(0.15f);
+
+        EnemyStop();
+
+        yield return new WaitForSeconds(0.15f);
         variableData.isHit = false;
+        if (variableData.curHP <= 0f)
+        {
+            variableData.curHP = 0f;
+            variableData.isDead = true;
+        }
     }
 
     // 사망
     public void EnemyDeath()
     {
-
+        gameObject.SetActive(false);
     }
 }

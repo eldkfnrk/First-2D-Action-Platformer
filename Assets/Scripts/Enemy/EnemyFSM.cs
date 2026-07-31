@@ -19,6 +19,8 @@ public class EnemyFSM : MonoBehaviour
         enemyStates.Add(Enemy.State.Attack, new EnemyAttackState(this));
         enemyStates.Add(Enemy.State.Hit, new EnemyHitState(this));
         enemyStates.Add(Enemy.State.Death, new EnemyDeathState(this));
+
+        currentState = enemyStates[Enemy.State.Idle];  // currentState가 null 상태일 수 있음을 방지하기 위한 코드
     }
 
     public void ChangeTransitions()
@@ -42,8 +44,10 @@ public class EnemyFSM : MonoBehaviour
 
     public void ChangeState(Enemy.State state)
     {
-        if (currentState != null)
-            currentState.StateExit();
+        if(enemyStates == null)
+            return;
+
+        currentState.StateExit();
         currentState = enemyStates[state];
         currentState.StateEnter();
     }
@@ -208,6 +212,7 @@ public class EnemyDeathState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.Death;
+        fsmController.enemy.EnemyDeath();
     }
 
     public override void StateUpdate()

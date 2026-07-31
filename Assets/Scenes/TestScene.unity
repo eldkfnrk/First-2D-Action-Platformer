@@ -439,7 +439,7 @@ GameObject:
   - component: {fileID: 719216882}
   - component: {fileID: 719216881}
   m_Layer: 7
-  m_Name: dino-idle1
+  m_Name: EnemyB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -642,6 +642,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f31251137973b443a673629efd65c6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRuntimeData
+  curHP: 0
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
@@ -649,6 +650,8 @@ MonoBehaviour:
   moveDir: 0
   playerEnemyXDistance: 0
   cantMove: 0
+  attackedStartPos: {x: 0, y: 0}
+  knockbackDir: {x: 0, y: 0}
   isHit: 0
   isDead: 0
 --- !u!114 &719216883
@@ -1086,6 +1089,7 @@ MonoBehaviour:
   wallJumpVec: {x: 0, y: 0}
   isJump: 0
   attackBoxPos: {x: 0, y: 0}
+  attackDir: {x: 0, y: 0}
   isRoll: 0
   isWall: 0
   isAttack: 0
@@ -7644,6 +7648,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f31251137973b443a673629efd65c6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRuntimeData
+  curHP: 0
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
@@ -7651,6 +7656,8 @@ MonoBehaviour:
   moveDir: 0
   playerEnemyXDistance: 0
   cantMove: 0
+  attackedStartPos: {x: 0, y: 0}
+  knockbackDir: {x: 0, y: 0}
   isHit: 0
   isDead: 0
 --- !u!114 &2103347627

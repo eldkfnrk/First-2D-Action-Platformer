@@ -13,15 +13,17 @@ MonoBehaviour:
   m_Name: EnemyBData
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   moveSpeed: 2.5
+  maxHP: 7
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
-  detectPlayerBoxOffset: {x: 0, y: 0}
+  floorCheckOffsetX: 0.35
+  detectPlayerBoxOffset: {x: 1, y: 0.7}
   detectPlayerBoxSize: {x: 5, y: 2.5}
   maxDistance: 15
-  knockbackPower: 10
+  knockbackPower: 2.5
   frontCheckDistance: 0.8
   floorCheckDistance: 0.8
