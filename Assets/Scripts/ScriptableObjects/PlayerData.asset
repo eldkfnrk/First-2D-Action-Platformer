@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c08487bdee52134fac7bf1fdb62c750, type: 3}
   m_Name: PlayerData
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
+  maxHp: 3
   moveSpeed: 5
   jumpPower: 10
   hitWallPower: 4
@@ -25,4 +26,6 @@ MonoBehaviour:
     m_Bits: 128
   groundCheckDistance: 1
   wallCheckDistance: 0.5
+  knockbackXPower: 10
+  knockbackYPower: 1
   attackBoxSize: {x: 1.5, y: 1.6}

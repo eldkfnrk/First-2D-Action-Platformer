@@ -29,23 +29,29 @@ public class PlayerInputManager : MonoBehaviour
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (context.started && !variableData.isJump)
+        if (context.started && !variableData.isJump && !variableData.isHit)
             variableData.jumpKeyDown = true;
     }
 
     public void OnRoll(InputAction.CallbackContext context)
     {
-        if (context.started && !variableData.isRoll && !variableData.isJump)
+        if (context.started && !variableData.isRoll && !variableData.isJump && !variableData.isHit)
             variableData.rollKeyDown = true;
     }
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if(context.started && variableData.atkKeyDownCount < 3 && !variableData.isRoll)
+        if(context.started && variableData.atkKeyDownCount < 3 && !variableData.isRoll && !variableData.isHit)
         {
             variableData.isAttack = true;
             ++variableData.atkKeyDownCount;
         }
+    }
+
+    public void OnDeath(InputAction.CallbackContext context)
+    {
+        if (context.started && variableData.isDead)
+            variableData.isRevival = true;
     }
 
     //IEnumerator WallJumpRoutine()

@@ -440,7 +440,7 @@ GameObject:
   - component: {fileID: 719216881}
   m_Layer: 7
   m_Name: EnemyB
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -652,6 +652,7 @@ MonoBehaviour:
   cantMove: 0
   attackedStartPos: {x: 0, y: 0}
   knockbackDir: {x: 0, y: 0}
+  isAttack: 0
   isHit: 0
   isDead: 0
 --- !u!114 &719216883
@@ -1080,6 +1081,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60fbccc30d0d1a549ada1d308a23d17d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerRuntimeData
+  curHP: 0
   sightDirection: 0
   moveDirection: 0
   cantInput: 0
@@ -1093,6 +1095,10 @@ MonoBehaviour:
   isRoll: 0
   isWall: 0
   isAttack: 0
+  isHit: 0
+  isDead: 0
+  isRevival: 0
+  knockbackDir: {x: 0, y: 0}
   atkRoutine: 0
   atkKeyDownCount: 0
   atkCount: 0
@@ -1180,7 +1186,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!114 &1343013096
 MonoBehaviour:
@@ -1397,8 +1403,8 @@ MonoBehaviour:
     m_ActionName: 'Player/Hurt[/Keyboard/x]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerAction, Assembly-CSharp
+      - m_Target: {fileID: 1343013085}
+        m_TargetAssemblyTypeName: PlayerInputManager, Assembly-CSharp
         m_MethodName: OnDeath
         m_Mode: 0
         m_Arguments:
@@ -7455,7 +7461,7 @@ GameObject:
   - component: {fileID: 2103347620}
   m_Layer: 7
   m_Name: EnemyA
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7658,6 +7664,7 @@ MonoBehaviour:
   cantMove: 0
   attackedStartPos: {x: 0, y: 0}
   knockbackDir: {x: 0, y: 0}
+  isAttack: 0
   isHit: 0
   isDead: 0
 --- !u!114 &2103347627

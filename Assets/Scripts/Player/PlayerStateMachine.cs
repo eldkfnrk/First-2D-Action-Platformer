@@ -61,17 +61,26 @@ public class PlayerStateMachine : MonoBehaviour
         states.Add(State.WallSlide, new WallSlideState(this));        
         states.Add(State.Roll, new RollState(this));        
         states.Add(State.Attack, new AttackState(this));        
+        states.Add(State.Hit, new HitState(this));        
+        states.Add(State.Death, new DeathState(this));        
     }
 
     private void Start()
     {
+        variableData.knockbackDir.y = constantData.knockbackYPower;
         playerState = State.Idle;
         currentState = states[playerState];
         currentState.Enter();
     }
 
+    private void OnEnable()
+    {
+        variableData.curHP = constantData.maxHp;
+    }
+
     private void Update()
     {
+        EssenetialCheckLsit();
         switch (playerState)
         {
             case State.Idle:
@@ -163,6 +172,14 @@ public class PlayerStateMachine : MonoBehaviour
                 if (!variableData.isAttack)
                     ChangeState(State.Idle);
                 break;
+            case State.Hit:
+                if (!variableData.isHit)
+                    ChangeState(State.Fall);
+                break;
+            case State.Death:
+                if (variableData.isRevival)
+                    ChangeState(State.Idle);
+                break;
         }
 
         currentState.Update();
@@ -179,13 +196,17 @@ public class PlayerStateMachine : MonoBehaviour
         variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
     }
 
-    // 플레이어 공격과 해당 공격에 피격당한 적
-    // 플레이어 공격 시 BoxCastAll을 통해 BoxCast 범위에 들어온 모든 적들은 피격 판정을 전달
-    // 피격 판정을 실행할 방법은 2가지이다.
-    // 1번 - BoxCastAll을 통해 획득한 적들의 피격 함수를 직접 호출하여 피격 진행
-    // 2번 - BoxCastAll을 통해 획득한 적들의 명단을 습득하여 게임 매니저에게 전달하고 게임 매니저가 이 명단에 있는 적들에게 통보
-    // 1번 방법은 너무 엮이는 것이 아닌가 하는 우려가 있고 2번 방법은 게임 매니저가 각 적에게 어떻게 통보해야 하는가를 고려해야 하는 정보의 부재가 있다.
-    // 우선 2번 방법을 중심으로 진행하되 진행이 더디다면 1번 혹은 AI에게 질의하는 방식으로 진행할 예정
+    void EssenetialCheckLsit()
+    {
+        if (variableData.isDead && playerState != State.Death)
+        {
+            ChangeState(State.Death);
+            return;
+        }
+
+        if (variableData.isHit && playerState != State.Hit)
+            ChangeState(State.Hit);
+    }
 
     void ChangeState(State state)
     {
@@ -293,6 +314,35 @@ public class PlayerStateMachine : MonoBehaviour
         // 게임 매니저에 전달 - 게임 매니저가 전투 판정을 관할
         if (hitCount != 0)
             GameManager.instance.AttackEnemies(hitEnemies, Vector2.right * variableData.sightDirection);  // 일반 공격이기 때문에 플레이어가 바라보는 방향으로 공격을 했을 것이기에 이와 같은 값을 공격 방향으로 전달
+    }
+
+    public void KnockBack()
+    {
+        StartCoroutine(KnockBackRoutine());
+    }
+
+    IEnumerator KnockBackRoutine()
+    {
+        // 넉백
+        // 넉백 버그가 발생했던 이유
+        // 충돌 시 isHit라는 값을 true로 변환시키고 어떤 상태이든 상관 없이 바로 Hit 상태로 전환시킨다.
+        // 이때 단 한 번만 넉백을 시행하고 피격이 끝났음을 알리기 위해 isHit를 false로 수정하는 것이였는데 내가 한 구현에서는 isHit가 true면 계속하여 피격 상태로의 전환을 시도하였기에 넉백 코루틴이 계속하여 호출되었을 것이다.
+        // 원래대로라면 플레이어의 상태가 피격 상태라면 더 이상 피격 상태로의 전환이 이뤄져서는 안 되었으나 그걸 방지하지 못하면서 코루틴이 중첩되었고 피격 상태가 끝난 후에도 남아서 y축으로 치솟는 동작을 하게 만들었던 것이다.
+        rigid.AddForce(variableData.knockbackDir, ForceMode2D.Impulse);
+        yield return new WaitForSeconds(0.2f);
+        variableData.isHit = false;
+        if (variableData.curHP <= 0f)
+            variableData.isDead = true;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            variableData.isHit = true;
+            variableData.knockbackDir.x = (transform.position.x - collision.transform.position.x) * constantData.knockbackXPower;
+            variableData.curHP -= 1f;  // 아직 적의 데미지라는 수치가 없기 때문에 임시로 1f라는 값을 사용
+        }
     }
 
     private void OnDrawGizmos()
@@ -527,5 +577,56 @@ public class AttackState : BaseState
     public override void Exit()
     {
         
+    }
+}
+
+public class HitState : BaseState
+{
+    public HitState(PlayerStateMachine controller) : base(controller) { }
+
+    public override void Enter()
+    {
+        fsmController.playerState = PlayerStateMachine.State.Hit;
+        fsmController.rigid.gravityScale = 1f;
+        fsmController.KnockBack();
+        fsmController.PlayerAnimation.PlayHit();
+    }
+
+    public override void Update()
+    {
+        
+    }
+
+    public override void Exit()
+    {
+
+    }
+}
+
+public class DeathState : BaseState
+{
+    public DeathState(PlayerStateMachine controller) : base(controller) { }
+
+    public override void Enter()
+    {
+        fsmController.playerState = PlayerStateMachine.State.Death;
+        fsmController.PlayerAnimation.PlayDeath();
+        fsmController.coll.enabled = false;
+        fsmController.rigid.gravityScale = 0f;
+        fsmController.rigid.linearVelocity = Vector2.zero;
+    }
+
+    public override void Update()
+    {
+        
+    }
+
+    public override void Exit()
+    {
+        fsmController.PlayerAnimation.ParameterReset();
+        fsmController.variableData.isDead = false;
+        fsmController.variableData.isRevival = false;
+        fsmController.coll.enabled = true;
+        fsmController.variableData.curHP = fsmController.constantData.maxHp;
     }
 }

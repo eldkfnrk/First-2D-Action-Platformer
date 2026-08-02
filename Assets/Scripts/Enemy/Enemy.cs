@@ -89,6 +89,12 @@ public class Enemy : MonoBehaviour
         rigid.linearVelocityX = 0f;
     }
 
+    // 플레이어 타격
+    public void EnemyAttack()
+    {
+        variableData.isAttack = true;
+    }
+
     // 피격
     public void EnemyHit()
     {

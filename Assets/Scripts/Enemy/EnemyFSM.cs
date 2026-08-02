@@ -36,10 +36,7 @@ public class EnemyFSM : MonoBehaviour
         }
 
         if (enemy.variableData.isHit && enemy.enemyState != Enemy.State.Hit)
-        {
             ChangeState(Enemy.State.Hit);
-            return;
-        }
     }
 
     public void ChangeState(Enemy.State state)

@@ -23,6 +23,7 @@ public class EnemyRuntimeData : MonoBehaviour
     public Vector2 attackedStartPos;  // 공격을 당한 위치
     public Vector2 knockbackDir;
 
+    public bool isAttack;
     public bool isHit;
     public bool isDead;
 }

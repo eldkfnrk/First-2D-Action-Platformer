@@ -1,9 +1,12 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [CreateAssetMenu(fileName = "PlayerData", menuName = "Scriptable Objects/PlayerData")]
 public class PlayerData : ScriptableObject
 {
     // 변하지 않는 플레이어의 값들을 저장
+
+    public float maxHp;
 
     // 이동 관련 데이터
     public float moveSpeed;  // 이동 속도
@@ -18,6 +21,9 @@ public class PlayerData : ScriptableObject
 
     public float groundCheckDistance;  // 땅을 체크할 거리
     public float wallCheckDistance;  // 벽을 체크할 거리
+
+    public float knockbackXPower;  // x축 넉백 파워
+    public float knockbackYPower;  // y축 넉백 파워
 
     public Vector2 attackBoxSize;  // 공격 범위
 }

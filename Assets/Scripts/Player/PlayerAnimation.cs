@@ -10,6 +10,16 @@ public class PlayerAnimation : MonoBehaviour
         animator = GetComponent<Animator>();
     }
 
+    public void ParameterReset()
+    {
+        animator.Play("Idle");
+        animator.SetBool("Grounded", true);
+        animator.SetFloat("AirSpeedY", 0f);
+        animator.SetInteger("AnimState", 0);
+        animator.SetBool("WallSlide", false);
+        animator.SetBool("noBlood", false);
+    }
+
     public void PlayIdle()
     {
         animator.SetBool("Grounded", true); 
@@ -53,5 +63,16 @@ public class PlayerAnimation : MonoBehaviour
         animator.SetInteger("AnimState", 0);
         string animationName = string.Format("Attack{0}", atkCount);
         animator.SetTrigger(animationName);
+    }
+
+    public void PlayHit()
+    {
+        animator.SetInteger("AnimState", 0);
+        animator.SetTrigger("Hurt");
+    }
+
+    public void PlayDeath()
+    {
+        animator.SetTrigger("Death");
     }
 }
