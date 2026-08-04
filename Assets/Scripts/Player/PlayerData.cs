@@ -7,6 +7,7 @@ public class PlayerData : ScriptableObject
     // 변하지 않는 플레이어의 값들을 저장
 
     public float maxHp;
+    public float maxStamina;
 
     // 이동 관련 데이터
     public float moveSpeed;  // 이동 속도
@@ -19,6 +20,16 @@ public class PlayerData : ScriptableObject
     public LayerMask groundLayer;  // 땅에 해당하는 레이어
     public LayerMask enemyLayer;  // 적에 해당하는 레이어
 
+    public float attackDurationTime;
+    public float knockbackDurationTime;
+    public float rollDurationTime;
+    public float cantInputDurationTime;
+
+    public WaitForSeconds attackDuration;
+    public WaitForSeconds knockbackDuration;
+    public WaitForSeconds rollDuration;
+    public WaitForSeconds cantInputDuration;
+
     public float groundCheckDistance;  // 땅을 체크할 거리
     public float wallCheckDistance;  // 벽을 체크할 거리
 
@@ -26,4 +37,5 @@ public class PlayerData : ScriptableObject
     public float knockbackYPower;  // y축 넉백 파워
 
     public Vector2 attackBoxSize;  // 공격 범위
+    public Vector2 blockBoxSize;  // 방어 범위
 }

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: PlayerData
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
   maxHp: 3
+  maxStamina: 0
   moveSpeed: 5
   jumpPower: 10
   hitWallPower: 4
@@ -24,8 +25,13 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  attackDurationTime: 0
+  knockbackDurationTime: 0
+  rollDurationTime: 0
+  cantInputDurationTime: 0.2
   groundCheckDistance: 1
   wallCheckDistance: 0.5
   knockbackXPower: 10
   knockbackYPower: 1
   attackBoxSize: {x: 1.5, y: 1.6}
+  blockBoxSize: {x: 0, y: 0}
