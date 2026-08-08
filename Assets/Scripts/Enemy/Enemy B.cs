@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class EnemyB : Enemy
 {
-    int changeActionRanNum;
-
     // 일정 범위 내에서 움직이다가 플레이어를 탐지하면 플레이어를 향해 달려드는 몬스터
     // "이동 - 멈춤 - 이동" 혹은 "이동 - 방향 전환 - 이동" 같이 정해진 범위 내에서 이동과 정지, 방향 전환 등을 수행
     // 그러다 플레이어를 탐지하면 플레이어를 향해 돌진
@@ -27,89 +25,12 @@ public class EnemyB : Enemy
     private void Update()
     {
         fsm.ChangeTransitions();
-        switch (enemyState)
-        {
-            case State.Idle:
-                actionTimer += Time.deltaTime;
-                if (ChangeStateChase())
-                {
-                    actionTimer = 0f;
-                    fsm.ChangeState(State.Move);
-                }
-                ChangeAction(State.Move);
-                break;
-            case State.Move:
-                if (ChangeStateChase())
-                {
-                    actionTimer = 0f;
-                    break;
-                }
-
-                actionTimer += Time.deltaTime;
-
-                ChangeAction(State.Idle);
-                break;
-            case State.Chase:
-                if (variableData.cantMove)
-                {
-                    actionTimer += Time.deltaTime;
-                    if (actionTimer >= 1f)
-                    {
-                        actionTimer = 0f;
-                        fsm.ChangeState(State.GoBack);
-                    }
-                }
-                break;
-            case State.GoBack:
-                if (ChangeStateChase())
-                {
-                    fsm.ChangeState(State.Chase);
-                    break;
-                }
-
-                if (Mathf.Abs(variableData.spawnLoc.x - transform.position.x) < 0.1f)
-                    fsm.ChangeState(State.Idle);
-                break;
-            case State.Hit:
-                // 공격을 당하면 반드시 플레이어를 쫓도록 설정
-                if (!variableData.isHit)
-                    fsm.ChangeState(State.Chase);
-                break;
-        }
         fsm.currentState.StateUpdate();
     }
 
     private void FixedUpdate()
     {
         WallFloorCheck();
-    }
-
-    bool ChangeStateChase()
-    {
-        if (DetectPlayer())
-        {
-            fsm.ChangeState(State.Chase);
-            variableData.cantMove = false;
-            actionTimer = 0f;
-            return true;
-        }
-
-        return false;
-    }
-
-    void ChangeAction(State changeState)
-    {
-        if (actionTimer < 1.5f)
-            return;
-
-        actionTimer = 0f;
-        changeActionRanNum = Random.Range(1, 11);
-
-        // 20% 확률로 상태 전환
-        if (changeActionRanNum > 8)
-        {
-            fsm.ChangeState(changeState);
-        }
     }
 
     private void OnDrawGizmos()

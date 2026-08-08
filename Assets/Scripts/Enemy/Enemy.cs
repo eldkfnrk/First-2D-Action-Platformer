@@ -26,16 +26,18 @@ public class Enemy : MonoBehaviour
     public EnemyAnimation enemyAnimation;
     public float actionTimer;
 
+    int ranNum;
+
     protected void Start()
     {
-        fsm.ChangeState(State.Move);
+        StateMove();
     }
 
     protected virtual void OnEnable()
     {
         variableData.curHP = constantData.maxHP;
         variableData.isDead = false;
-        fsm.ChangeState(State.Move);
+        StateMove();
     }
 
     public virtual void WallFloorCheck()
@@ -52,6 +54,11 @@ public class Enemy : MonoBehaviour
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
         variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
+
+        // 앞에 벽이 있는 경우 탐지하지 못하는 것으로 설정
+        if(variableData.frontCheck.collider != null)
+            return false;
+
         return variableData.detectPlayer.collider != null;
     }
 
@@ -62,18 +69,119 @@ public class Enemy : MonoBehaviour
         sprtieR.flipX = !sprtieR.flipX;
     }
 
+    // 적 타입 B를 기준으로 작성(다른 타입의 적들은 각각 알맞게 상태 전환)
+    public virtual void ChangeAction()
+    {
+        if (actionTimer < 1.5f)
+        {
+            actionTimer += Time.deltaTime;
+            return;
+        }
+
+        actionTimer = 0f;
+
+        ranNum = Random.Range(1, 11);
+
+        // 20% 확률로 상태 전환
+        if (ranNum > 8)
+        {
+            switch (enemyState)
+            {
+                case State.Idle:
+                    StateMove();
+                    break;
+                case State.Move:
+                    StateIdle();
+                    break;
+            }
+        }
+    }
+
+    // 각 상태로 전환되는 함수들
+
+    public virtual void StateIdle()
+    {
+        variableData.moveDir = 0f;
+        fsm.ChangeState(State.Idle);
+        enemyAnimation.PlayIdle();
+    }
+
+    public virtual void StateMove()
+    {
+        fsm.ChangeState(State.Move);
+        enemyAnimation.PlayMove();
+    }
+
+    public virtual void StateChase()
+    {
+        fsm.ChangeState(State.Chase);
+        variableData.cantMove = false;
+        actionTimer = 0f;
+        enemyAnimation.PlayMove();
+    }
+
+    public void ChangeGoBack()
+    {
+        actionTimer += Time.deltaTime;
+
+        if (actionTimer > 1f)
+        {
+            actionTimer = 0f;
+            StateGoBack();
+        }
+    }
+
+    public virtual void StateGoBack()
+    {
+        fsm.ChangeState(State.GoBack);
+        variableData.cantMove = false;
+        ChangeDirection();
+        enemyAnimation.PlayMove();
+    }
+
+    // GoBack 상태에서 스폰한 위치에 도착하면 상태 전환을 하기 위한 함수
+    public bool ArriveSpawnLoc()
+    {
+        if (Mathf.Abs(variableData.spawnLoc.x - transform.position.x) < 0.1f)
+        {
+            StateIdle();
+            return true;
+        }
+
+        return false;
+    }
+
+    public virtual void StateAttack()
+    {
+
+    }
+
+    public virtual void StateHit()
+    {
+        fsm.ChangeState(State.Hit);
+        EnemyStop();
+        EnemyHit();
+        // 피격 애니메이션 있거나 피격 이펙트를 만든 경우 여기서 재생 예정
+    }
+
+    public virtual void StateDeath()
+    {
+        fsm.ChangeState(State.Death);
+        EnemyDeath();
+    }
+
     // 모든 적이 공통적으로 갖는 동작 - 이동, 멈춤, 타격, 피격, 사망
 
     // 일반 이동
-    public void EnemyMove()
+    public virtual void EnemyMove()
     {
         rigid.linearVelocityX = constantData.moveSpeed * variableData.sightDirection;
         if (variableData.frontCheck.collider != null || variableData.floorCheck.collider == null)
             ChangeDirection();
     }
 
-    // 추적 이동
-    public void EnemyChaseMove()
+    // 추적 이동(적 타입 B를 기준으로 설정)
+    public virtual void EnemyChaseMove()
     {
         variableData.playerEnemyXDistance = GameManager.instance.player.transform.position.x - transform.position.x;
         variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
@@ -89,7 +197,7 @@ public class Enemy : MonoBehaviour
         rigid.linearVelocityX = 0f;
     }
 
-    // 플레이어 타격
+    // 플레이어 타격 - 행동에 공격이 있는 경우 이를 사용
     public void EnemyAttack()
     {
         variableData.isAttack = true;
@@ -107,7 +215,7 @@ public class Enemy : MonoBehaviour
     {
         // 피격 시 넉백 발생
         rigid.AddForce(variableData.knockbackDir * constantData.knockbackPower, ForceMode2D.Impulse);
-        enemyAnimation.PlayIdle();  // 대부분의 적이 피격 애니메이션이 없어서 Idle 애니메이션 사용(피격이 있는 적은 따로 override로 수정)
+        enemyAnimation.PlayIdle();  // 현재는 여기서 애니메이션을 재생하지만 추후에는 상태 변경 시 재생하는 것으로 변경 예정
         yield return new WaitForSeconds(0.15f);
 
         EnemyStop();

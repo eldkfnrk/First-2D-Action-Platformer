@@ -25,13 +25,13 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
-  attackDurationTime: 0
-  knockbackDurationTime: 0
-  rollDurationTime: 0
+  attackDurationTime: 0.45
+  knockbackDurationTime: 0.3
+  rollDurationTime: 0.45
   cantInputDurationTime: 0.2
   groundCheckDistance: 1
   wallCheckDistance: 0.5
-  knockbackXPower: 10
-  knockbackYPower: 1
+  knockbackXPower: 5
+  knockbackYPower: 3.5
   attackBoxSize: {x: 1.5, y: 1.6}
   blockBoxSize: {x: 0, y: 0}

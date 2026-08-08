@@ -1053,7 +1053,7 @@ MonoBehaviour:
   playerState: 0
   constantData: {fileID: 11400000, guid: 0152e060e33bee44389aa751605abb62, type: 2}
   variableData: {fileID: 0}
-  PlayerAnimation: {fileID: 0}
+  playerAnimation: {fileID: 0}
   rigid: {fileID: 0}
   spriteR: {fileID: 0}
   coll: {fileID: 0}
@@ -1082,22 +1082,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerRuntimeData
   curHP: 0
+  curStamina: 0
   sightDirection: 0
   moveDirection: 0
   cantInput: 0
   downKeyPressed: 0
-  jumpKeyDown: 0
   rollKeyDown: 0
   wallJumpVec: {x: 0, y: 0}
   isJump: 0
   attackBoxPos: {x: 0, y: 0}
   attackDir: {x: 0, y: 0}
+  blockBoxPos: {x: 0, y: 0}
   isRoll: 0
   isWall: 0
   isAttack: 0
+  isBlock: 0
   isHit: 0
   isDead: 0
   isRevival: 0
+  successBlock: 0
   knockbackDir: {x: 0, y: 0}
   atkRoutine: 0
   atkKeyDownCount: 0
@@ -1355,8 +1358,8 @@ MonoBehaviour:
     m_ActionName: 'Player/Roll[/Keyboard/l]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Player, Assembly-CSharp
+      - m_Target: {fileID: 1343013085}
+        m_TargetAssemblyTypeName: PlayerInputManager, Assembly-CSharp
         m_MethodName: OnBlock
         m_Mode: 0
         m_Arguments:

@@ -21,18 +21,6 @@ public class EnemyA : Enemy
 
     private void Update()
     {
-        switch (enemyState)
-        {
-            case State.Move:
-                if (variableData.isHit)
-                    fsm.ChangeState(State.Hit);
-                break;
-            case State.Hit:
-                if (!variableData.isHit)
-                    fsm.ChangeState(State.Move);
-                break;
-        }
-
         fsm.ChangeTransitions();
         fsm.currentState.StateUpdate();
     }

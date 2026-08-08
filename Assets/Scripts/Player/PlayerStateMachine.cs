@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.XR;
 
 // [System.Flags] - 하나의 열거형 변수에 여러 개의 값을 동시에 지정(다중 선택)할 수 있게 해주는 기능
 // 비트 연산을 기반으로 작동 => 예시) 1-A, 2-B, 4-C가 있다고 하면 A=0001, B=0010, C=0100 이라는 값을 갖고 열거형 변수가 A와 C의 값을 동시에 갖고 있게 하고자 하면 A와 C를 OR 연산을 통해 얻은 0101이라는 값을 저장하는 식으로 볼 수 있다.
@@ -103,36 +104,11 @@ public class PlayerStateMachine : MonoBehaviour
         EssenetialCheckLsit();
         switch (playerState)
         {
-            case State.Roll:
-                if (!variableData.isRoll)
-                {
-                    if (variableData.groundCheck.collider == null)
-                        ChangeState(State.Fall);
-                    else
-                        ChangeState(State.Idle);
-                }
-                break;
-            case State.Attack:
-                // 공격이 종료되면 구르도록 설정
-                if (variableData.rollKeyDown && !variableData.atkRoutine)
-                {
-                    ChangeState(State.Roll);
-                    break;
-                }
-
-                if (!variableData.isAttack)
-                    ChangeState(State.Idle);
-                break;
-            case State.Hit:
-                if (!variableData.isHit)
-                    ChangeState(State.Fall);
-                break;
             case State.Death:
                 if (variableData.isRevival)
                     ChangeState(State.Idle);
                 break;
         }
-        Debug.Log(playerState);
         currentState.Update();
     }
 
@@ -151,20 +127,24 @@ public class PlayerStateMachine : MonoBehaviour
     {
         if (variableData.isDead && playerState != State.Death)
         {
-            ChangeState(State.Death);
+            Death();
             return;
         }
 
         if (variableData.isHit && playerState != State.Hit)
-            ChangeState(State.Hit);
+            Hit();
     }
 
     void ChangeState(State state)
     {
+        if (playerState == state)
+            return;
+
         currentState.Exit();
         currentState = states[state];
         currentState.Enter();
     }
+
     public void Idle()
     {
         if (rigid.gravityScale != 1f)
@@ -183,11 +163,11 @@ public class PlayerStateMachine : MonoBehaviour
     public void Jump()
     {
         variableData.isJump = true;
+        ChangeState(State.Jump);
         if (variableData.isWall)
         {
             // 벽 점프를 할 때 벽을 체크해버리면서 점프와 동시에 WallSlide로 변해버리는 문제가 있었고 이를 방지하기 위해 아예 점프 시에 몸을 반대로 돌렸다 생각하고 반대를 체크하도록 설정(이러면 점프할 때 바로 벽을 감지하지 않으면서 정상 작동한다.)
-            spriteR.flipX = !spriteR.flipX;
-            variableData.sightDirection = spriteR.flipX ? -1f : 1f;
+            ChangeSight();
             variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
             variableData.wallJumpVec.x = variableData.sightDirection * constantData.hitWallPower;
             variableData.wallJumpVec.y = constantData.jumpPower;
@@ -200,7 +180,6 @@ public class PlayerStateMachine : MonoBehaviour
         {
             rigid.AddForce(Vector2.up * constantData.jumpPower, ForceMode2D.Impulse);
         }
-        ChangeState(State.Jump);
         playerAnimation.PlayJump();
     }
 
@@ -226,20 +205,9 @@ public class PlayerStateMachine : MonoBehaviour
     public void Roll()
     {
         variableData.rollKeyDown = false;
-        DoRoll();
         ChangeState(State.Roll);
+        DoRoll();
         playerAnimation.PlayRoll();
-    }
-
-    public void CantInputChange()
-    {
-        StartCoroutine(CantInputChangeRoutine());
-    }
-
-    IEnumerator CantInputChangeRoutine()
-    {
-        yield return constantData.cantInputDuration;
-        variableData.cantInput = false;
     }
 
     void DoRoll()
@@ -261,6 +229,13 @@ public class PlayerStateMachine : MonoBehaviour
     }
 
     public void Attack(int atkCount)
+    {
+        ChangeState(State.Attack);
+        DoAttack(atkCount);
+        playerAnimation.PlayAttack(atkCount);
+    }
+
+    public void DoAttack(int atkCount)
     {
         variableData.atkRoutine = true;
         StartCoroutine(AttackRoutine(atkCount));
@@ -296,6 +271,34 @@ public class PlayerStateMachine : MonoBehaviour
             GameManager.instance.AttackEnemies(hitEnemies, Vector2.right * variableData.sightDirection);  // 일반 공격이기 때문에 플레이어가 바라보는 방향으로 공격을 했을 것이기에 이와 같은 값을 공격 방향으로 전달
     }
 
+    public void Block()
+    {
+        // 일반 방어는 몬스터들에게 뚫리니 사용하는 것은 스킬이라는 설정
+        // 모든 스킬은 마나를 소모
+        // 자연에 퍼져 있는 마나를 끌어와 쓴다는 설정으로 소울라이크 스테미너처럼 사용해도 빠르게 차도록 설정
+        // 적당한 소모량과 적당한 마나 회복량 설정이 중요할 것이라 판단
+        // 사용할 수 있는 소모량보다 적은 마나 상태라면 사용 불가
+
+        // 방어는 콜라이더 하나를 사용
+        // 해당 콜라이더는 방어 이펙트 같은 스프라이트를 하나 사용하는 방식으로 방어 범위를 표현하는 방안을 고민 중
+        // 위의 것을 도입한다면 방어 성공 시 해당 방어 이펙트의 애니메이션을 실행시켜 방어 효과를 눈으로 볼 수 있게 수정 가능
+        // 방어에 해당하는 콜라이더에 몬스터 공격이 닿으면 방어 성공으로 플레이어의 방어 성공 애니메이션 재생 및 적의 공격 방향을 x축만 습득하여 x축으로만 약간 넉백
+        // 방어 성공은 또 따로 함수 생성하여 구현
+
+        variableData.isBlock = true;
+        ChangeState(State.Block);
+        // 방어 범위 및 판정을 콜라이더(콜라이더를 포함한 오브젝트)를 활성화
+        playerAnimation.PlayBlock();
+    }
+
+    public void Hit()
+    {
+        ChangeState(State.Hit);
+        rigid.gravityScale = 1f;
+        KnockBack();
+        playerAnimation.PlayHit();
+    }
+
     public void KnockBack()
     {
         StartCoroutine(KnockBackRoutine());
@@ -304,10 +307,6 @@ public class PlayerStateMachine : MonoBehaviour
     IEnumerator KnockBackRoutine()
     {
         // 넉백
-        // 넉백 버그가 발생했던 이유
-        // 충돌 시 isHit라는 값을 true로 변환시키고 어떤 상태이든 상관 없이 바로 Hit 상태로 전환시킨다.
-        // 이때 단 한 번만 넉백을 시행하고 피격이 끝났음을 알리기 위해 isHit를 false로 수정하는 것이였는데 내가 한 구현에서는 isHit가 true면 계속하여 피격 상태로의 전환을 시도하였기에 넉백 코루틴이 계속하여 호출되었을 것이다.
-        // 원래대로라면 플레이어의 상태가 피격 상태라면 더 이상 피격 상태로의 전환이 이뤄져서는 안 되었으나 그걸 방지하지 못하면서 코루틴이 중첩되었고 피격 상태가 끝난 후에도 남아서 y축으로 치솟는 동작을 하게 만들었던 것이다.
         rigid.AddForce(variableData.knockbackDir, ForceMode2D.Impulse);
         yield return constantData.knockbackDuration;
         variableData.isHit = false;
@@ -315,18 +314,36 @@ public class PlayerStateMachine : MonoBehaviour
             variableData.isDead = true;
     }
 
-    public void Block()
+    public void Death()
     {
-        // 스테미너는 특정 행동이 가능한 수치를 의미
-        // 스테미너를 소모하는 행동은 방어와 구르기
-        // 방어는 성공 시 스테미너를 소모
-        // 구르기는 즉시 스테미너를 소모
-        // 두 행동 모두 사용할 수 있는 소모량보다 적은 스테미너 상태라면 사용 불가
+        ChangeState(State.Death);
+        coll.enabled = false;
+        rigid.gravityScale = 0f;
+        rigid.linearVelocity = Vector2.zero;
+        playerAnimation.PlayDeath();
+    }
 
-        // 다음 날 할 거
-        // 비트 마스크를 적용하여 인풋 조건 허용 만들기
-        // 상태 전환 각 State가 관장하도록 설정하기
-        // 위의 변화에 맞도록 각 상태 수정하기
+    public void CantInputChange()
+    {
+        StartCoroutine(CantInputChangeRoutine());
+    }
+
+    IEnumerator CantInputChangeRoutine()
+    {
+        yield return constantData.cantInputDuration;
+        variableData.cantInput = false;
+    }
+
+    public void ChangeSight()
+    {
+        spriteR.flipX = !spriteR.flipX;
+        variableData.sightDirection = spriteR.flipX ? -1f : 1f;
+
+        // 만약 방어 중인 상황이라면 방어 범위도 바뀔 수 있도록 설정
+        if(playerState == State.Block)
+        {
+
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -374,8 +391,8 @@ public abstract class BaseState
             return;
 
         fsmController.rigid.linearVelocityX = fsmController.variableData.moveDirection * fsmController.constantData.moveSpeed;
-        if (fsmController.variableData.sightDirection == -fsmController.variableData.moveDirection)  // 바라보는 방향과 이동 방향이 반대인 경우
-            fsmController.spriteR.flipX = !fsmController.spriteR.flipX;
+        if (fsmController.variableData.moveDirection != 0f && fsmController.variableData.sightDirection != fsmController.variableData.moveDirection)  // 바라보는 방향과 이동 방향이 반대인 경우
+            fsmController.ChangeSight();
     }
 }
 
@@ -432,13 +449,13 @@ public class RunState : BaseState
             return;
         }
 
-        Move();
-
         if(fsmController.variableData.moveDirection == 0f)
         {
             fsmController.Idle();
             return;
         }
+
+        Move();
     }
 
     public override void Exit()
@@ -458,8 +475,6 @@ public class JumpState : BaseState
 
     public override void Update()
     {
-        Move();  // 점프 중에도 좌우 이동은 가능하도록 설정
-
         if(fsmController.variableData.groundCheck.collider != null)
         {
             if (fsmController.rigid.linearVelocityY <= 0f)
@@ -475,13 +490,14 @@ public class JumpState : BaseState
 
         if (fsmController.rigid.linearVelocityY < 0f)
             fsmController.Fall();
+
+        Move();  // 점프 중에도 좌우 이동은 가능하도록 설정
     }
 
     public override void Exit()
     {
         if (fsmController.variableData.moveDirection == 0f)
             fsmController.rigid.linearVelocityX = 0f;
-        fsmController.variableData.isJump = false;
     }
 }
 
@@ -514,7 +530,6 @@ public class FallState : BaseState
     {
         if (fsmController.variableData.moveDirection == 0f)
             fsmController.rigid.linearVelocityX = 0f;
-        fsmController.variableData.isJump = false;
     }
 }
 
@@ -531,6 +546,12 @@ public class WallSlideState : BaseState
 
     public override void Update()
     {
+        if(fsmController.variableData.groundCheck.collider != null)
+        {
+            fsmController.Idle();
+            return;
+        }
+
         if (fsmController.variableData.downKeyPressed)
             fsmController.rigid.linearVelocityY = -2f;
         else
@@ -554,6 +575,16 @@ public class RollState : BaseState
 
     public override void Update()
     {
+        if (!fsmController.variableData.isRoll)
+        {
+            if (fsmController.variableData.groundCheck.collider == null)
+                fsmController.Fall();
+            else
+                fsmController.Idle();
+
+            return;
+        }
+
         fsmController.rigid.linearVelocityY = 0f;
         if (fsmController.variableData.wallCheck.collider != null)
             fsmController.rigid.linearVelocityX = 0f;
@@ -575,9 +606,7 @@ public class AttackState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Attack;
-        ++fsmController.variableData.atkCount;
-        fsmController.Attack(fsmController.variableData.atkCount);
-        fsmController.playerAnimation.PlayAttack(fsmController.variableData.atkCount);
+        fsmController.variableData.isAttack = true;
     }
 
     public override void Update()
@@ -585,11 +614,21 @@ public class AttackState : BaseState
         if (fsmController.variableData.atkRoutine)
             return;
 
-        if (fsmController.variableData.atkKeyDownCount <= 3 && fsmController.variableData.atkKeyDownCount > 1)
+        if(!fsmController.variableData.isAttack && fsmController.variableData.rollKeyDown)
+        {
+            fsmController.Roll();
+            return;
+        }
+
+        if(fsmController.variableData.atkKeyDownCount > fsmController.variableData.atkCount)
         {
             ++fsmController.variableData.atkCount;
             fsmController.Attack(fsmController.variableData.atkCount);
-            fsmController.playerAnimation.PlayAttack(fsmController.variableData.atkCount);
+        }
+
+        if (!fsmController.variableData.isAttack)
+        {
+            fsmController.Idle();
         }
     }
 
@@ -611,12 +650,17 @@ public class BlockState : BaseState
 
     public override void Update()
     {
+        if (fsmController.variableData.moveDirection != 0f && fsmController.variableData.moveDirection != fsmController.variableData.sightDirection)
+            fsmController.ChangeSight();
 
+        if (!fsmController.variableData.isBlock)
+            fsmController.Idle();
     }
 
     public override void Exit()
     {
-
+        fsmController.variableData.isBlock = false;  // 키를 뗄 때도 방어가 해제되지만 키를 누르고 있음에도 점프, 공격 등의 키 입력이 있으면 상태 전환이 되기 때문에 반드시 방어 상태가 아님을 알리기 위해 바꿔준다.
+        fsmController.playerAnimation.StopBlock();
     }
 }
 
@@ -627,14 +671,17 @@ public class HitState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Hit;
-        fsmController.rigid.gravityScale = 1f;
-        fsmController.KnockBack();
-        fsmController.playerAnimation.PlayHit();
     }
 
     public override void Update()
     {
-        
+        if (!fsmController.variableData.isHit)
+        {
+            if (fsmController.variableData.groundCheck.collider != null)
+                fsmController.Idle();
+            else
+                fsmController.Fall();
+        }
     }
 
     public override void Exit()
@@ -650,15 +697,17 @@ public class DeathState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Death;
-        fsmController.playerAnimation.PlayDeath();
-        fsmController.coll.enabled = false;
-        fsmController.rigid.gravityScale = 0f;
-        fsmController.rigid.linearVelocity = Vector2.zero;
     }
 
     public override void Update()
     {
-        
+        if (fsmController.variableData.isRevival)
+        {
+            if (fsmController.variableData.groundCheck.collider == null)
+                fsmController.Idle();
+            else
+                fsmController.Fall();
+        }
     }
 
     public override void Exit()
@@ -668,5 +717,7 @@ public class DeathState : BaseState
         fsmController.variableData.isRevival = false;
         fsmController.coll.enabled = true;
         fsmController.variableData.curHP = fsmController.constantData.maxHp;
+        fsmController.variableData.cantInput = true;
+        fsmController.CantInputChange();
     }
 }

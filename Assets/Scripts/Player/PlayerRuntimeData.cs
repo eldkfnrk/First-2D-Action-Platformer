@@ -13,7 +13,6 @@ public class PlayerRuntimeData : MonoBehaviour
     public bool cantInput;
     
     public bool downKeyPressed;
-    public bool jumpKeyDown;  // 점프 키 입력 여부
     public bool rollKeyDown;
 
     public RaycastHit2D groundCheck;

@@ -19,6 +19,9 @@ public class EnemyAnimation : MonoBehaviour
 
     public void PlayMove()
     {
+        if (anim.runtimeAnimatorController == animators[1])
+            return;
+
         anim.runtimeAnimatorController = animators[1];
     }
 }

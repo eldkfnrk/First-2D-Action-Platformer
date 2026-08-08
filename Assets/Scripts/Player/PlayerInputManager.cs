@@ -48,17 +48,25 @@ public class PlayerInputManager : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if(context.started && variableData.atkKeyDownCount < 3 && (player.CurrentState.inputControl & InputControl.Attack) != 0)
+        if(context.started && (player.CurrentState.inputControl & InputControl.Attack) != 0 && variableData.atkKeyDownCount < 3)
         {
-            variableData.isAttack = true;
             ++variableData.atkKeyDownCount;
+
+            if(variableData.atkCount == 0)
+            {
+                ++variableData.atkCount;
+                player.Attack(variableData.atkCount);
+            }
         }
     }
 
     public void OnBlock(InputAction.CallbackContext context)
     {
-        if ((context.performed || context.started) && (player.CurrentState.inputControl & InputControl.Block) != 0)
-            variableData.isBlock = true;
+        if (context.started && (player.CurrentState.inputControl & InputControl.Block) != 0)
+            player.Block();
+        
+        if (context.canceled)
+            variableData.isBlock = false;
     }
 
     public void OnDeath(InputAction.CallbackContext context)

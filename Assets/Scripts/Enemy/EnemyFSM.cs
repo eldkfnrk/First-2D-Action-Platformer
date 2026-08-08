@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public class EnemyFSM : MonoBehaviour
 {
@@ -31,17 +33,20 @@ public class EnemyFSM : MonoBehaviour
         // 우선 순위는 사망 - 피격 순이다.
         if (enemy.variableData.isDead && enemy.enemyState != Enemy.State.Death)
         {
-            ChangeState(Enemy.State.Death);
+            enemy.StateDeath();
             return;
         }
 
         if (enemy.variableData.isHit && enemy.enemyState != Enemy.State.Hit)
-            ChangeState(Enemy.State.Hit);
+            enemy.StateHit();
     }
 
     public void ChangeState(Enemy.State state)
     {
         if(enemyStates == null)
+            return;
+
+        if (enemy.enemyState == state)
             return;
 
         currentState.StateExit();
@@ -72,13 +77,17 @@ public class EnemyIdleState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.Idle;
-        fsmController.enemy.variableData.moveDir = 0f;
-        fsmController.enemy.enemyAnimation.PlayIdle();
     }
 
     public override void StateUpdate()
     {
-        
+        if (fsmController.enemy.DetectPlayer())
+        {
+            fsmController.enemy.StateChase();
+            return;
+        }
+
+        fsmController.enemy.ChangeAction();
     }
 
     public override void StateExit()
@@ -94,12 +103,18 @@ public class EnemyMoveState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.Move;
-        fsmController.enemy.enemyAnimation.PlayMove();
     }
 
     public override void StateUpdate()
     {
+        if (fsmController.enemy.DetectPlayer())
+        {
+            fsmController.enemy.StateChase();
+            return;
+        }
+
         fsmController.enemy.EnemyMove();
+        fsmController.enemy.ChangeAction();
     }
 
     public override void StateExit()
@@ -121,13 +136,22 @@ public class EnemyChaseState : EnemyBaseState
     public override void StateUpdate()
     {
         if (fsmController.enemy.variableData.cantMove)
-            return;
+        {
+            if (!fsmController.enemy.DetectPlayer())
+            {
+                fsmController.enemy.ChangeGoBack();
+                return;
+            }
+            else
+                fsmController.enemy.variableData.cantMove = false;
+        }
 
         fsmController.enemy.EnemyChaseMove();
         if (fsmController.enemy.variableData.playerEnemyXDistance >= fsmController.enemy.constantData.maxDistance
             || fsmController.enemy.variableData.floorCheck.collider == null || fsmController.enemy.variableData.frontCheck.collider != null)
         {
             fsmController.enemy.variableData.cantMove = true;
+            fsmController.enemy.EnemyStop();
             fsmController.enemy.enemyAnimation.PlayIdle();
         }
     }
@@ -145,12 +169,13 @@ public class EnemyGoBackState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.GoBack;
-        fsmController.enemy.ChangeDirection();
-        fsmController.enemy.enemyAnimation.PlayMove();
     }
 
     public override void StateUpdate()
     {
+        if (fsmController.enemy.ArriveSpawnLoc())
+            return;
+
         fsmController.enemy.EnemyMove();
     }
 
@@ -187,13 +212,17 @@ public class EnemyHitState : EnemyBaseState
     public override void StateEnter()
     {
         fsmController.enemy.enemyState = Enemy.State.Hit;
-        fsmController.enemy.EnemyStop();
-        fsmController.enemy.EnemyHit();
     }
 
     public override void StateUpdate()
     {
-        
+        if (!fsmController.enemy.variableData.isHit)
+        {
+            if (fsmController.enemy.GetType() == typeof(EnemyA))
+                fsmController.ChangeState(Enemy.State.Move);
+            else
+                fsmController.ChangeState(Enemy.State.Chase);
+        }
     }
 
     public override void StateExit()

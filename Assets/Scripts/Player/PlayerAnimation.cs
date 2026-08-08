@@ -13,6 +13,7 @@ public class PlayerAnimation : MonoBehaviour
     public void ParameterReset()
     {
         animator.Play("Idle");
+        animator.SetBool("IdleBlock", false);
         animator.SetBool("Grounded", true);
         animator.SetFloat("AirSpeedY", 0f);
         animator.SetInteger("AnimState", 0);
@@ -23,6 +24,7 @@ public class PlayerAnimation : MonoBehaviour
     public void PlayIdle()
     {
         animator.SetBool("Grounded", true); 
+        animator.SetBool("IdleBlock", false); 
         animator.SetFloat("AirSpeedY", 0f);
         animator.SetInteger("AnimState", 0);
     }
@@ -63,6 +65,17 @@ public class PlayerAnimation : MonoBehaviour
         animator.SetInteger("AnimState", 0);
         string animationName = string.Format("Attack{0}", atkCount);
         animator.SetTrigger(animationName);
+    }
+
+    public void PlayBlock()
+    {
+        animator.SetInteger("AnimState", 0);
+        animator.SetBool("IdleBlock", true);
+    }
+
+    public void StopBlock()
+    {
+        animator.SetBool("IdleBlock", false);
     }
 
     public void PlayHit()
