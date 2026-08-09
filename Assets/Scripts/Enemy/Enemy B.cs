@@ -11,14 +11,8 @@ public class EnemyB : Enemy
     // 따라가지 않는 거리는 플레이어와 몬스터 사이의 x축 거리를 사용할 것이고 이 거리는 몬스터의 탐지 범위보다 더 길게 설정할 예정
     private void Awake()
     {
-        fsm = GetComponent<EnemyFSM>();
-        rigid = GetComponent<Rigidbody2D>();
-        sprtieR = GetComponent<SpriteRenderer>();
-        variableData = GetComponent<EnemyRuntimeData>();
-        enemyAnimation = GetComponent<EnemyAnimation>();
-
+        InitializeComponents();
         variableData.spawnLoc = transform.position;
-
         variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
     }
 

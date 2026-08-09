@@ -14,12 +14,15 @@ public class EnemyAnimation : MonoBehaviour
 
     public void PlayIdle()
     {
+        if (anim == null)
+            return;
+
         anim.runtimeAnimatorController = animators[0];
     }
 
     public void PlayMove()
     {
-        if (anim.runtimeAnimatorController == animators[1])
+        if (anim == null)
             return;
 
         anim.runtimeAnimatorController = animators[1];

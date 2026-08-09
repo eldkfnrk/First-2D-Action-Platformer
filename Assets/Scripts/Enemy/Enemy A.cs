@@ -8,14 +8,8 @@ public class EnemyA : Enemy
 
     private void Awake()
     {
-        fsm = GetComponent<EnemyFSM>();
-        rigid = GetComponent<Rigidbody2D>();
-        sprtieR = GetComponent<SpriteRenderer>();
-        variableData = GetComponent<EnemyRuntimeData>();
-        enemyAnimation = GetComponent<EnemyAnimation>();
-
+        InitializeComponents();
         variableData.spawnLoc = transform.position;
-
         variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
     }
 
@@ -28,6 +22,21 @@ public class EnemyA : Enemy
     private void FixedUpdate()
     {
         WallFloorCheck();
+    }
+
+    public override void RealizePlayerDeath()
+    {
+        if (variableData.isAttack)
+        {
+            variableData.isAttack = false;
+            variableData.isCrush = false;
+            fsm.ChangeState(State.Move);
+        }
+    }
+
+    public override void ActionMove()
+    {
+        EnemyMove();
     }
 
     private void OnDrawGizmos()

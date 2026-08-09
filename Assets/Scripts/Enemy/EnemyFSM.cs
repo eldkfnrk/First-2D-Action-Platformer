@@ -87,7 +87,7 @@ public class EnemyIdleState : EnemyBaseState
             return;
         }
 
-        fsmController.enemy.ChangeAction();
+        fsmController.enemy.ActionIdle();
     }
 
     public override void StateExit()
@@ -113,8 +113,7 @@ public class EnemyMoveState : EnemyBaseState
             return;
         }
 
-        fsmController.enemy.EnemyMove();
-        fsmController.enemy.ChangeAction();
+        fsmController.enemy.ActionMove();
     }
 
     public override void StateExit()
@@ -143,7 +142,7 @@ public class EnemyChaseState : EnemyBaseState
                 return;
             }
             else
-                fsmController.enemy.variableData.cantMove = false;
+                fsmController.enemy.ChangeChase();
         }
 
         fsmController.enemy.EnemyChaseMove();
@@ -196,7 +195,13 @@ public class EnemyAttackState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        
+        if (!fsmController.enemy.variableData.isAttack)
+        {
+            if (fsmController.enemy.GetType() == typeof(EnemyA))
+                fsmController.ChangeState(Enemy.State.Move);
+            else
+                fsmController.ChangeState(Enemy.State.Chase);
+        }
     }
 
     public override void StateExit()

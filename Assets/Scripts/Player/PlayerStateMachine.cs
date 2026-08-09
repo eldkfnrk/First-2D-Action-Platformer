@@ -697,6 +697,7 @@ public class DeathState : BaseState
     public override void Enter()
     {
         fsmController.playerState = PlayerStateMachine.State.Death;
+        GameManager.instance.NotifyPlayerDeath();
     }
 
     public override void Update()

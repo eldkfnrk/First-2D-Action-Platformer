@@ -37,7 +37,52 @@ public class Enemy : MonoBehaviour
     {
         variableData.curHP = constantData.maxHP;
         variableData.isDead = false;
+        GameManager.instance.playerDeathEvent += RealizePlayerDeath;
+        if (fsm == null)  // fsm 컴포넌트가 없다는 것은 아직 Awake가 진행되지 않았다는 것을 의미 -> Awake 하기 전 즉, 게임 시작인 경우에는 이 밑으로는 동작하지 않도록 제한하는 역할(다른 Awake에서 초기화하는 컴포넌트도 가능. 그러나 이런 구조는 약점이 있으니 수정 필요)
+            return;
         StateMove();
+    }
+
+    protected virtual void OnDisable()
+    {
+        GameManager.instance.playerDeathEvent -= RealizePlayerDeath;
+    }
+
+    protected void InitializeComponents()
+    {
+        fsm = GetComponent<EnemyFSM>();
+        rigid = GetComponent<Rigidbody2D>();
+        sprtieR = GetComponent<SpriteRenderer>();
+        variableData = GetComponent<EnemyRuntimeData>();
+        enemyAnimation = GetComponent<EnemyAnimation>();
+    }
+
+    public virtual void RealizePlayerDeath()
+    {
+        // 공격 중도 아니였고 추격 중도 아니었다면 아무 동작을 하지 않아도 되기에 바로 함수 종료
+        if (enemyState != State.Chase && enemyState != State.Attack)
+            return;
+
+        // 플레이어를 공격 중이었다면 이 공격 중인 상황을 종료하기 위하여 변수 값 변환
+        if (variableData.isAttack)
+        {
+            variableData.isAttack = false;
+            variableData.isCrush = false;
+        }
+
+        // 플레이어 사망 후 잠시 멈췄다가 제자리로 돌아가도록 하기 위하여 Chase 상태로 돌아가서 GoBack 상태로 바꿀 수 있는 변수 값을 변환
+        variableData.cantMove = true;
+        EnemyStop();
+        enemyAnimation.PlayIdle();
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            variableData.isCrush = true;
+            StateAttack();
+        }
     }
 
     public virtual void WallFloorCheck()
@@ -106,10 +151,21 @@ public class Enemy : MonoBehaviour
         enemyAnimation.PlayIdle();
     }
 
+    public virtual void ActionIdle()
+    {
+        ChangeAction();
+    }
+
     public virtual void StateMove()
     {
         fsm.ChangeState(State.Move);
         enemyAnimation.PlayMove();
+    }
+
+    public virtual void ActionMove()
+    {
+        EnemyMove();
+        ChangeAction();
     }
 
     public virtual void StateChase()
@@ -117,6 +173,20 @@ public class Enemy : MonoBehaviour
         fsm.ChangeState(State.Chase);
         variableData.cantMove = false;
         actionTimer = 0f;
+        enemyAnimation.PlayMove();
+    }
+
+    public void ChangeChase()
+    {
+        actionTimer = 0f;
+        variableData.cantMove = false;
+    }
+
+    public virtual void StateGoBack()
+    {
+        fsm.ChangeState(State.GoBack);
+        variableData.cantMove = false;
+        ChangeDirection();
         enemyAnimation.PlayMove();
     }
 
@@ -129,14 +199,6 @@ public class Enemy : MonoBehaviour
             actionTimer = 0f;
             StateGoBack();
         }
-    }
-
-    public virtual void StateGoBack()
-    {
-        fsm.ChangeState(State.GoBack);
-        variableData.cantMove = false;
-        ChangeDirection();
-        enemyAnimation.PlayMove();
     }
 
     // GoBack 상태에서 스폰한 위치에 도착하면 상태 전환을 하기 위한 함수
@@ -153,7 +215,18 @@ public class Enemy : MonoBehaviour
 
     public virtual void StateAttack()
     {
+        variableData.isAttack = true;
+        fsm.ChangeState(State.Attack);
+        if (variableData.isCrush)  // 플레이어와의 충돌인가
+        {
+            // 충돌 루틴 시행
+            EnemyStop();
+            EnemyCrush();
+        }
+        else  // 공격 동작을 수행하고 있는가
+        {
 
+        }
     }
 
     public virtual void StateHit()
@@ -195,12 +268,27 @@ public class Enemy : MonoBehaviour
     public void EnemyStop()
     {
         rigid.linearVelocityX = 0f;
+        enemyAnimation.PlayIdle();
     }
 
     // 플레이어 타격 - 행동에 공격이 있는 경우 이를 사용
-    public void EnemyAttack()
+    // 타격에 종류는 실제로 공격 모션이 주어지는 경우와 플레이어와의 충돌 시 타격이 가해지는 경우가 있다.
+    // 충돌이 공격인 타입 A, B에 대한 것을 정의 후 다른 공격이 있는 경우 이를 override해서 구현
+    public virtual void EnemyAttack()
     {
-        variableData.isAttack = true;
+        
+    }
+
+    public void EnemyCrush()
+    {
+        StartCoroutine(CrushRoutine());
+    }
+
+    IEnumerator CrushRoutine()
+    {
+        yield return new WaitForSeconds(0.3f);
+        variableData.isAttack = false;
+        variableData.isCrush = false;
     }
 
     // 피격

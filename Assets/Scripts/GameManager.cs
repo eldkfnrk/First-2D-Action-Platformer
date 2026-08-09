@@ -22,6 +22,14 @@ public class GameManager : MonoBehaviour
     public GameObject player;
     public GameObject playerPrefab;
 
+    // 플레이어 사망을 알리는 이벤트
+    public event System.Action playerDeathEvent;
+
+    public void NotifyPlayerDeath()
+    {
+        playerDeathEvent?.Invoke();  // 이 Invoke 함수는 호출 시 이벤트에 등록된 모든 함수들을 실행한다는 의미의 함수이다.
+    }
+
     private void Awake()
     {
         if(instance == null)

@@ -24,6 +24,7 @@ public class EnemyRuntimeData : MonoBehaviour
     public Vector2 knockbackDir;
 
     public bool isAttack;
+    public bool isCrush;  // 플레이어와 충돌했는지 확인하는 변수
     public bool isHit;
     public bool isDead;
 }
