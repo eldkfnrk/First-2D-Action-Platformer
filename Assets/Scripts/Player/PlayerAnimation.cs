@@ -78,10 +78,22 @@ public class PlayerAnimation : MonoBehaviour
         animator.SetBool("IdleBlock", false);
     }
 
+    public void PlaySuccessBlock()
+    {
+        animator.SetTrigger("Block");
+    }
+
     public void PlayHit()
     {
+        animator.SetBool("IdleBlock", false);
         animator.SetInteger("AnimState", 0);
         animator.SetTrigger("Hurt");
+    }
+
+    public void PlaySlideDust()
+    {
+        // 따로 먼지가 애니메이션을 동작시킬 애니메이터를 보유한 오브젝트를 추가할 예정
+        // 해당 오브젝트가 나타났다가 사라졌다가를 하는 동작을 수행할 예정
     }
 
     public void PlayDeath()

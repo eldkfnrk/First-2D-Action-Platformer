@@ -36,6 +36,8 @@ public class PlayerData : ScriptableObject
     public float knockbackXPower;  // x축 넉백 파워
     public float knockbackYPower;  // y축 넉백 파워
 
+    public float blockKnockbackPower;
+
     public Vector2 attackBoxSize;  // 공격 범위
-    public Vector2 blockBoxSize;  // 방어 범위
+    public float blockBoxXPos;
 }

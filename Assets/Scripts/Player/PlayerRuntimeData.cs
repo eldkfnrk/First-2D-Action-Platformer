@@ -24,8 +24,6 @@ public class PlayerRuntimeData : MonoBehaviour
     public Vector2 attackBoxPos;
     public Vector2 attackDir;
 
-    public Vector2 blockBoxPos;
-
     public bool isRoll;
     public bool isWall;
     public bool isAttack;
@@ -38,6 +36,8 @@ public class PlayerRuntimeData : MonoBehaviour
     public bool successBlock;
 
     public Vector2 knockbackDir;
+    public Vector2 blockKnockbackDir;
+    public Vector2 blockBoxPos;
 
     public bool atkRoutine;
     public int atkKeyDownCount;

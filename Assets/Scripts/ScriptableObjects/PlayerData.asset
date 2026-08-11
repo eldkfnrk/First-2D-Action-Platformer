@@ -33,5 +33,6 @@ MonoBehaviour:
   wallCheckDistance: 0.5
   knockbackXPower: 5
   knockbackYPower: 3.5
+  blockKnockbackPower: 3.5
   attackBoxSize: {x: 1.5, y: 1.6}
-  blockBoxSize: {x: 0, y: 0}
+  blockBoxXPos: 0.8

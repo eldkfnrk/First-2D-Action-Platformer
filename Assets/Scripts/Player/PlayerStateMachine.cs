@@ -39,6 +39,7 @@ public class PlayerStateMachine : MonoBehaviour
     Collider2D[] hitEnemies;  
 
     public State playerState;  // 변하는 데이터 값이지만 예외적으로 상태 데이터이기 때문에 직접 관리
+    public GameObject blockRangeBox;
 
     Dictionary<State, BaseState> states;
     BaseState currentState;
@@ -84,6 +85,7 @@ public class PlayerStateMachine : MonoBehaviour
         constantData.knockbackDuration = new WaitForSeconds(constantData.knockbackDurationTime);
         constantData.rollDuration = new WaitForSeconds(constantData.rollDurationTime);
         constantData.cantInputDuration = new WaitForSeconds(constantData.cantInputDurationTime);
+        variableData.blockBoxPos.y = 0f;
     }
 
     private void Start()
@@ -285,9 +287,46 @@ public class PlayerStateMachine : MonoBehaviour
         // 방어에 해당하는 콜라이더에 몬스터 공격이 닿으면 방어 성공으로 플레이어의 방어 성공 애니메이션 재생 및 적의 공격 방향을 x축만 습득하여 x축으로만 약간 넉백
         // 방어 성공은 또 따로 함수 생성하여 구현
 
+        if (playerState == State.Block)
+            return;
+
         variableData.isBlock = true;
+        blockRangeBox.SetActive(true);
+        BlockBoxChangeLoc(variableData.sightDirection);
         ChangeState(State.Block);
         // 방어 범위 및 판정을 콜라이더(콜라이더를 포함한 오브젝트)를 활성화
+        playerAnimation.PlayBlock();
+    }
+
+    // 방어 범위를 정하는 박스의 위치를 조정하는 함수
+    public void BlockBoxChangeLoc(float sightDirection)
+    {
+        variableData.blockBoxPos.x = constantData.blockBoxXPos * sightDirection;
+        blockRangeBox.transform.localPosition = variableData.blockBoxPos;  // localPosition으로 부모 객체 기반 위치를 사용해야만 정상적인 작동이 가능하다.
+    }
+
+    public void SuccessBlock()
+    {
+        // 방어 범위임을 나타내는 오브젝트의 콜라이더에 충돌하는데 hit 판정이 되는 버그가 존재 수정 필요
+        StartCoroutine(SuccessBlockRoutine());
+    }
+
+    IEnumerator SuccessBlockRoutine()
+    {
+        variableData.blockKnockbackDir.x = constantData.blockKnockbackPower * variableData.sightDirection * -1f;  // 블락 넉백은 방어하는 방향의 반대 방향으로 밀리는 기능이기 때문에 -1f를 수행하여 바라보는 방향의 반대 방향으로 보내는 것이다.
+        rigid.AddForce(variableData.blockKnockbackDir, ForceMode2D.Impulse);
+        playerAnimation.PlaySuccessBlock();
+
+        // 한 프레임 쉬고 IdleBlock 파라미터를 false로 바꾸는 이유는 IdleBlock 파라미터가 true여야 기본 방어 애니메이션이 재생되고 이 상태에서 Block 트리거를 활성화시켜야 방어 성공 애니메이션이 재생되기 때문이다.
+        // 근데 왜 IdleBlock 파라미터를 false로 바꾸냐면 기본 방어 애니메이션은 Any State에서 즉, 어떠한 상태에서도 파라미터 값이 만족한다면 재생되기 때문에 방어 성공 애니메이션 재생을 위한 트리거를 활성화시켜서 상태를 넘기고 나서
+        // IdleBlock 파라미터 값을 false로 해야만 정상적으로 방어 성공 애니메이션이 재생되기 때문이다.
+        yield return null;  
+
+        playerAnimation.StopBlock();
+
+        yield return new WaitForSeconds(0.4f);
+
+        variableData.successBlock = false;
         playerAnimation.PlayBlock();
     }
 
@@ -338,12 +377,6 @@ public class PlayerStateMachine : MonoBehaviour
     {
         spriteR.flipX = !spriteR.flipX;
         variableData.sightDirection = spriteR.flipX ? -1f : 1f;
-
-        // 만약 방어 중인 상황이라면 방어 범위도 바뀔 수 있도록 설정
-        if(playerState == State.Block)
-        {
-
-        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -353,6 +386,15 @@ public class PlayerStateMachine : MonoBehaviour
             variableData.isHit = true;
             variableData.knockbackDir.x = (transform.position.x - collision.transform.position.x) * constantData.knockbackXPower;
             variableData.curHP -= 1f;  // 아직 적의 데미지라는 수치가 없기 때문에 임시로 1f라는 값을 사용
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            variableData.successBlock = true;
+            SuccessBlock();
         }
     }
 
@@ -650,8 +692,14 @@ public class BlockState : BaseState
 
     public override void Update()
     {
+        if (fsmController.variableData.successBlock)
+            return;
+
         if (fsmController.variableData.moveDirection != 0f && fsmController.variableData.moveDirection != fsmController.variableData.sightDirection)
+        {
             fsmController.ChangeSight();
+            fsmController.BlockBoxChangeLoc(fsmController.variableData.sightDirection);
+        }
 
         if (!fsmController.variableData.isBlock)
             fsmController.Idle();
@@ -660,6 +708,7 @@ public class BlockState : BaseState
     public override void Exit()
     {
         fsmController.variableData.isBlock = false;  // 키를 뗄 때도 방어가 해제되지만 키를 누르고 있음에도 점프, 공격 등의 키 입력이 있으면 상태 전환이 되기 때문에 반드시 방어 상태가 아님을 알리기 위해 바꿔준다.
+        fsmController.blockRangeBox.SetActive(false);
         fsmController.playerAnimation.StopBlock();
     }
 }

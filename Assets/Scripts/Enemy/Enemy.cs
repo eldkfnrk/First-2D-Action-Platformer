@@ -85,6 +85,15 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Block"))
+        {
+            variableData.isCrush = true;
+            StateAttack();
+        }
+    }
+
     public virtual void WallFloorCheck()
     {
         variableData.floorCheckOrigin.x = transform.position.x + constantData.floorCheckOffsetX * variableData.sightDirection;
