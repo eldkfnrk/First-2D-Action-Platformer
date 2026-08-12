@@ -175,6 +175,7 @@ public class PlayerStateMachine : MonoBehaviour
             variableData.wallJumpVec.y = constantData.jumpPower;
             variableData.cantInput = true;
             variableData.isWall = false;
+            rigid.linearVelocityY = 0f;  // 벽에서 미끄러지는 상태에서 아래 키를 눌러서 y축 속도를 건들이고 있을 경우를 대비하여 점프 직전 0으로 수정하여 점프 높이에 영향이 가지 않도록 하기 위한 설정
             rigid.AddForce(variableData.wallJumpVec, ForceMode2D.Impulse);
             CantInputChange();
         }
@@ -595,14 +596,20 @@ public class WallSlideState : BaseState
         }
 
         if (fsmController.variableData.downKeyPressed)
+        {
             fsmController.rigid.linearVelocityY = -2f;
+            fsmController.playerAnimation.SlideDustSpeedUp();
+        }
         else
+        {
             fsmController.rigid.linearVelocityY = 0f;
+            fsmController.playerAnimation.SlideDustSpeedDown();
+        }
     }
 
     public override void Exit()
     {
-        
+        fsmController.playerAnimation.StopSlideDust();
     }
 }
 

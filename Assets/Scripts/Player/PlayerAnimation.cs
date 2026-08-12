@@ -1,13 +1,18 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
     Animator animator;
+    [SerializeField] GameObject slideDustVFX;
+    Animator slideDustAnim;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        slideDustAnim = GetComponentsInChildren<Animator>(true)[1];
+        // 새로 알게된 사실 - 스프라이트 렌더러가 없다면 애니메이터가 스프라이트를 출력하지 못해서 애니메이션이 보이지 않는다.
     }
 
     public void ParameterReset()
@@ -92,8 +97,26 @@ public class PlayerAnimation : MonoBehaviour
 
     public void PlaySlideDust()
     {
-        // 따로 먼지가 애니메이션을 동작시킬 애니메이터를 보유한 오브젝트를 추가할 예정
-        // 해당 오브젝트가 나타났다가 사라졌다가를 하는 동작을 수행할 예정
+        if (!slideDustVFX.activeSelf)
+        {
+            slideDustVFX.SetActive(true);
+            slideDustVFX.GetComponent<SlideDustAnimation>().SlideDustReposition();
+        }
+    }
+
+    public void SlideDustSpeedUp()
+    {
+        slideDustAnim.speed = 1f;
+    }
+
+    public void SlideDustSpeedDown()
+    {
+        slideDustAnim.speed = 0.5f;
+    }
+
+    public void StopSlideDust()
+    {
+        slideDustVFX.SetActive(false);
     }
 
     public void PlayDeath()
