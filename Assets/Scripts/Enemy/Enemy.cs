@@ -11,8 +11,9 @@ public class Enemy : MonoBehaviour
         Idle,
         Move,
         Chase,
-        GoBack,
+        GoBack,  // 원래 있던 자리로 돌아가는 상태
         Attack,
+        FlyBack,  // 다시 하늘로 올라가는 상태
         Hit,
         Death,
     }
@@ -28,7 +29,21 @@ public class Enemy : MonoBehaviour
 
     int ranNum;
 
-    protected void Start()
+    protected virtual void Awake()
+    {
+        if (fsm == null)
+            InitializeComponents();
+        
+        variableData.spawnLoc = transform.position;
+        variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.playerDeathEvent -= RealizePlayerDeath;
+            GameManager.instance.playerDeathEvent += RealizePlayerDeath;
+        }
+    }
+
+    protected virtual void Start()
     {
         StateMove();
     }
@@ -37,15 +52,33 @@ public class Enemy : MonoBehaviour
     {
         variableData.curHP = constantData.maxHP;
         variableData.isDead = false;
-        GameManager.instance.playerDeathEvent += RealizePlayerDeath;
-        if (fsm == null)  // fsm 컴포넌트가 없다는 것은 아직 Awake가 진행되지 않았다는 것을 의미 -> Awake 하기 전 즉, 게임 시작인 경우에는 이 밑으로는 동작하지 않도록 제한하는 역할(다른 Awake에서 초기화하는 컴포넌트도 가능. 그러나 이런 구조는 약점이 있으니 수정 필요)
-            return;
+        if(GameManager.instance != null)
+        {
+            GameManager.instance.playerDeathEvent -= RealizePlayerDeath;
+            GameManager.instance.playerDeathEvent += RealizePlayerDeath;
+        }
+
+        // 컴포넌트가 하나도 초기화되지 않았다면 초기화시키도록 수정
+        if (fsm == null)
+            InitializeComponents();
+
         StateMove();
     }
 
     protected virtual void OnDisable()
     {
         GameManager.instance.playerDeathEvent -= RealizePlayerDeath;
+    }
+
+    protected virtual void Update()
+    {
+        fsm.ChangeTransitions();
+        fsm.currentState.StateUpdate();
+    }
+
+    protected virtual void FixedUpdate()
+    {
+        WallFloorCheck();
     }
 
     protected void InitializeComponents()
@@ -103,7 +136,7 @@ public class Enemy : MonoBehaviour
     }
 
     // 플레이어 탐지
-    public bool DetectPlayer()
+    public virtual bool DetectPlayer()
     {
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
@@ -310,6 +343,12 @@ public class Enemy : MonoBehaviour
     // 피격 행동이 다른 적이 있을 수 있기에 가상 함수로 선언
     protected virtual IEnumerator HitRoutine()
     {
+        // 기본 상태의 함수를 사용하는 적 A, B 타입은 간단하게 뒤로 넉백되는 피격만 될 것이니 넉백에 y값이 포함되면 안 된다. 그래서 y 값을 0으로 바꾸고 크기가 1이 되도록 x 값을 바꿔준다.
+        variableData.knockbackDir.y = 0f;
+        if (variableData.knockbackDir.x > 0f)
+            variableData.knockbackDir.x = 1f;
+        else
+            variableData.knockbackDir.x = -1f;
         // 피격 시 넉백 발생
         rigid.AddForce(variableData.knockbackDir * constantData.knockbackPower, ForceMode2D.Impulse);
         enemyAnimation.PlayIdle();  // 현재는 여기서 애니메이션을 재생하지만 추후에는 상태 변경 시 재생하는 것으로 변경 예정

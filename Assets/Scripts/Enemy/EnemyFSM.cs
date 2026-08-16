@@ -11,7 +11,14 @@ public class EnemyFSM : MonoBehaviour
 
     private void Awake()
     {
-        enemy = GetComponent<Enemy>();
+        if (enemyStates == null)
+            InitializeFsmController();
+    }
+
+    void InitializeFsmController()
+    {
+        if (enemy == null)
+            enemy = GetComponent<Enemy>();
 
         enemyStates = new Dictionary<Enemy.State, EnemyBaseState>();
         enemyStates.Add(Enemy.State.Idle, new EnemyIdleState(this));
@@ -23,6 +30,7 @@ public class EnemyFSM : MonoBehaviour
         enemyStates.Add(Enemy.State.Death, new EnemyDeathState(this));
 
         currentState = enemyStates[Enemy.State.Idle];  // currentState가 null 상태일 수 있음을 방지하기 위한 코드
+        currentState.StateEnter();
     }
 
     public void ChangeTransitions()
@@ -43,8 +51,8 @@ public class EnemyFSM : MonoBehaviour
 
     public void ChangeState(Enemy.State state)
     {
-        if(enemyStates == null)
-            return;
+        if (enemyStates == null)
+            InitializeFsmController();
 
         if (enemy.enemyState == state)
             return;

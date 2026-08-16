@@ -9,23 +9,6 @@ public class EnemyB : Enemy
     // 이때 일정 거리 이상으로 떨어지면 더 이상 따라오지 않고 다시 원래 있던 곳으로 돌아가서 동일한 행동 수행
     // 탐지 범위는 몬스터의 앞으로 일정 거리의 범위, 뒤로는 가까이 오면 탐지할 수 있게 앞보다는 적은 범위
     // 따라가지 않는 거리는 플레이어와 몬스터 사이의 x축 거리를 사용할 것이고 이 거리는 몬스터의 탐지 범위보다 더 길게 설정할 예정
-    private void Awake()
-    {
-        InitializeComponents();
-        variableData.spawnLoc = transform.position;
-        variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
-    }
-
-    private void Update()
-    {
-        fsm.ChangeTransitions();
-        fsm.currentState.StateUpdate();
-    }
-
-    private void FixedUpdate()
-    {
-        WallFloorCheck();
-    }
 
     private void OnDrawGizmos()
     {

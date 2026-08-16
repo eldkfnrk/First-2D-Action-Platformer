@@ -20,7 +20,6 @@ public class EnemyRuntimeData : MonoBehaviour
     public float playerEnemyXDistance;  // 플레이어와 적 캐릭터 간 X축 거리(플레이어가 적 캐릭터로부터 X축으로 일정 거리 벌어지면 더 이상 추적하는 것을 그만두기 위한 값)
     public bool cantMove;
 
-    public Vector2 attackedStartPos;  // 공격을 당한 위치
     public Vector2 knockbackDir;
 
     public bool isAttack;

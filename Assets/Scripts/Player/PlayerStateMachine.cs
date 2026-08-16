@@ -271,7 +271,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         // 게임 매니저에 전달 - 게임 매니저가 전투 판정을 관할
         if (hitCount != 0)
-            GameManager.instance.AttackEnemies(hitEnemies, Vector2.right * variableData.sightDirection);  // 일반 공격이기 때문에 플레이어가 바라보는 방향으로 공격을 했을 것이기에 이와 같은 값을 공격 방향으로 전달
+            GameManager.instance.AttackEnemies(hitEnemies, variableData.attackBoxPos);  // 일반 공격이기 때문에 플레이어가 바라보는 방향으로 공격을 했을 것이기에 이와 같은 값을 공격 방향으로 전달
     }
 
     public void Block()

@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
         
     }
 
-    public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackDir)
+    public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackBoxPos)
     {
         EnemyRuntimeData enemyVariableData;
 
@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour
                 break;
             enemyVariableData = attackedEnemy.gameObject.GetComponent<EnemyRuntimeData>();
             enemyVariableData.isHit = true;
-            enemyVariableData.knockbackDir = attackDir;
+            enemyVariableData.knockbackDir = ((Vector2)enemyVariableData.transform.position - attackBoxPos).normalized;
         }
     }
 
