@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 936870de9fc2ebc498cdd28395930b47, type: 3}
   m_Name: EnemyCData
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  moveSpeed: 0
+  moveSpeed: 5
+  diveSpeed: 11
   maxHP: 0
   groundLayer:
     serializedVersion: 2
@@ -20,10 +21,10 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
-  floorCheckOffsetX: 0
+  floorCheckOffsetX: 0.2
   detectPlayerBoxOffset: {x: 0, y: 0}
   detectPlayerBoxSize: {x: 10, y: 10}
   maxDistance: 0
   knockbackPower: 0
-  frontCheckDistance: 0
-  floorCheckDistance: 0
+  frontCheckDistance: 0.8
+  floorCheckDistance: 0.8

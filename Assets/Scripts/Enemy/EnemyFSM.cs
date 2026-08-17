@@ -115,12 +115,6 @@ public class EnemyMoveState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        if (fsmController.enemy.DetectPlayer())
-        {
-            fsmController.enemy.StateChase();
-            return;
-        }
-
         fsmController.enemy.ActionMove();
     }
 
@@ -142,25 +136,7 @@ public class EnemyChaseState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        if (fsmController.enemy.variableData.cantMove)
-        {
-            if (!fsmController.enemy.DetectPlayer())
-            {
-                fsmController.enemy.ChangeGoBack();
-                return;
-            }
-            else
-                fsmController.enemy.ChangeChase();
-        }
-
-        fsmController.enemy.EnemyChaseMove();
-        if (fsmController.enemy.variableData.playerEnemyXDistance >= fsmController.enemy.constantData.maxDistance
-            || fsmController.enemy.variableData.floorCheck.collider == null || fsmController.enemy.variableData.frontCheck.collider != null)
-        {
-            fsmController.enemy.variableData.cantMove = true;
-            fsmController.enemy.EnemyStop();
-            fsmController.enemy.enemyAnimation.PlayIdle();
-        }
+        fsmController.enemy.ActionChase();
     }
 
     public override void StateExit()
@@ -180,10 +156,8 @@ public class EnemyGoBackState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        if (fsmController.enemy.ArriveSpawnLoc())
-            return;
 
-        fsmController.enemy.EnemyMove();
+        fsmController.enemy.ActionGoBack();
     }
 
     public override void StateExit()
@@ -203,13 +177,7 @@ public class EnemyAttackState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        if (!fsmController.enemy.variableData.isAttack)
-        {
-            if (fsmController.enemy.GetType() == typeof(EnemyA))
-                fsmController.ChangeState(Enemy.State.Move);
-            else
-                fsmController.ChangeState(Enemy.State.Chase);
-        }
+        fsmController.enemy.ActionAttack();
     }
 
     public override void StateExit()

@@ -490,6 +490,7 @@ MonoBehaviour:
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
   floorCheckOrigin: {x: 0, y: 0}
+  attackDir: {x: 0, y: 0}
   moveDir: 0
   playerEnemyXDistance: 0
   cantMove: 0
@@ -708,7 +709,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!61 &719216876
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -911,6 +912,7 @@ MonoBehaviour:
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
   floorCheckOrigin: {x: 0, y: 0}
+  attackDir: {x: 0, y: 0}
   moveDir: 0
   playerEnemyXDistance: 0
   cantMove: 0
@@ -8194,6 +8196,7 @@ MonoBehaviour:
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
   floorCheckOrigin: {x: 0, y: 0}
+  attackDir: {x: 0, y: 0}
   moveDir: 0
   playerEnemyXDistance: 0
   cantMove: 0

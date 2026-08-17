@@ -31,8 +31,7 @@ public class Enemy : MonoBehaviour
 
     protected virtual void Awake()
     {
-        if (fsm == null)
-            InitializeComponents();
+        InitializeComponents();
         
         variableData.spawnLoc = transform.position;
         variableData.sightDirection = sprtieR.flipX ? 1f : -1f;
@@ -58,9 +57,7 @@ public class Enemy : MonoBehaviour
             GameManager.instance.playerDeathEvent += RealizePlayerDeath;
         }
 
-        // 컴포넌트가 하나도 초기화되지 않았다면 초기화시키도록 수정
-        if (fsm == null)
-            InitializeComponents();
+        InitializeComponents();
 
         StateMove();
     }
@@ -81,8 +78,28 @@ public class Enemy : MonoBehaviour
         WallFloorCheck();
     }
 
+    protected virtual void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            variableData.isCrush = true;
+            StateAttack();
+        }
+    }
+
+    protected virtual void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Block"))
+        {
+            variableData.isCrush = true;
+            StateAttack();
+        }
+    }
+
     protected void InitializeComponents()
     {
+        if (fsm != null) // 컴포넌트가 하나도 초기화되지 않았다면 초기화시키도록 수정
+            return;
         fsm = GetComponent<EnemyFSM>();
         rigid = GetComponent<Rigidbody2D>();
         sprtieR = GetComponent<SpriteRenderer>();
@@ -107,24 +124,6 @@ public class Enemy : MonoBehaviour
         variableData.cantMove = true;
         EnemyStop();
         enemyAnimation.PlayIdle();
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            variableData.isCrush = true;
-            StateAttack();
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.gameObject.CompareTag("Block"))
-        {
-            variableData.isCrush = true;
-            StateAttack();
-        }
     }
 
     public virtual void WallFloorCheck()
@@ -193,21 +192,10 @@ public class Enemy : MonoBehaviour
         enemyAnimation.PlayIdle();
     }
 
-    public virtual void ActionIdle()
-    {
-        ChangeAction();
-    }
-
     public virtual void StateMove()
     {
         fsm.ChangeState(State.Move);
         enemyAnimation.PlayMove();
-    }
-
-    public virtual void ActionMove()
-    {
-        EnemyMove();
-        ChangeAction();
     }
 
     public virtual void StateChase()
@@ -218,18 +206,99 @@ public class Enemy : MonoBehaviour
         enemyAnimation.PlayMove();
     }
 
-    public void ChangeChase()
-    {
-        actionTimer = 0f;
-        variableData.cantMove = false;
-    }
-
     public virtual void StateGoBack()
     {
         fsm.ChangeState(State.GoBack);
         variableData.cantMove = false;
         ChangeDirection();
         enemyAnimation.PlayMove();
+    }
+
+    public virtual void StateAttack()
+    {
+        variableData.isAttack = true;
+        fsm.ChangeState(State.Attack);
+        EnemyStop();
+        EnemyAttack();
+    }
+
+    public virtual void StateHit()
+    {
+        fsm.ChangeState(State.Hit);
+        EnemyStop();
+        EnemyHit();
+        // 피격 애니메이션 있거나 피격 이펙트를 만든 경우 여기서 재생 예정
+    }
+
+    public virtual void StateDeath()
+    {
+        fsm.ChangeState(State.Death);
+        EnemyDeath();
+    }
+
+    public virtual void ActionIdle()
+    {
+        ChangeAction();
+    }
+
+    public virtual void ActionMove()
+    {
+        if (DetectPlayer())
+        {
+            StateChase();
+            return;
+        }
+
+        EnemyMove();
+        ChangeAction();
+    }
+
+    public virtual void ActionChase()
+    {
+        if (variableData.cantMove)
+        {
+            if (!DetectPlayer())
+            {
+                ChangeGoBack();
+                return;
+            }
+            else
+                ChangeChase();
+        }
+
+        EnemyChaseMove();
+        if (variableData.playerEnemyXDistance >= constantData.maxDistance
+            || variableData.floorCheck.collider == null || variableData.frontCheck.collider != null)
+        {
+            variableData.cantMove = true;
+            EnemyStop();
+            enemyAnimation.PlayIdle();
+        }
+    }
+
+    public virtual void ActionGoBack()
+    {
+        if (ArriveSpawnLoc())
+            return;
+
+        EnemyMove();
+    }
+
+    public virtual void ActionAttack()
+    {
+        if (!variableData.isAttack)
+        {
+            if (GetType() == typeof(EnemyA))
+                fsm.ChangeState(Enemy.State.Move);
+            else
+                fsm.ChangeState(Enemy.State.Chase);
+        }
+    }
+
+    public void ChangeChase()
+    {
+        actionTimer = 0f;
+        variableData.cantMove = false;
     }
 
     public void ChangeGoBack()
@@ -253,36 +322,6 @@ public class Enemy : MonoBehaviour
         }
 
         return false;
-    }
-
-    public virtual void StateAttack()
-    {
-        variableData.isAttack = true;
-        fsm.ChangeState(State.Attack);
-        if (variableData.isCrush)  // 플레이어와의 충돌인가
-        {
-            // 충돌 루틴 시행
-            EnemyStop();
-            EnemyCrush();
-        }
-        else  // 공격 동작을 수행하고 있는가
-        {
-
-        }
-    }
-
-    public virtual void StateHit()
-    {
-        fsm.ChangeState(State.Hit);
-        EnemyStop();
-        EnemyHit();
-        // 피격 애니메이션 있거나 피격 이펙트를 만든 경우 여기서 재생 예정
-    }
-
-    public virtual void StateDeath()
-    {
-        fsm.ChangeState(State.Death);
-        EnemyDeath();
     }
 
     // 모든 적이 공통적으로 갖는 동작 - 이동, 멈춤, 타격, 피격, 사망
@@ -309,7 +348,7 @@ public class Enemy : MonoBehaviour
     // 멈춤
     public void EnemyStop()
     {
-        rigid.linearVelocityX = 0f;
+        rigid.linearVelocity = Vector2.zero;
         enemyAnimation.PlayIdle();
     }
 
@@ -318,15 +357,15 @@ public class Enemy : MonoBehaviour
     // 충돌이 공격인 타입 A, B에 대한 것을 정의 후 다른 공격이 있는 경우 이를 override해서 구현
     public virtual void EnemyAttack()
     {
-        
+        CrushRoutineStart();
     }
 
-    public void EnemyCrush()
+    protected void CrushRoutineStart()
     {
         StartCoroutine(CrushRoutine());
     }
 
-    IEnumerator CrushRoutine()
+    protected IEnumerator CrushRoutine()
     {
         yield return new WaitForSeconds(0.3f);
         variableData.isAttack = false;

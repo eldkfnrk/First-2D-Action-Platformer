@@ -4,6 +4,7 @@ using UnityEngine;
 public class EnemyData : ScriptableObject
 {
     public float moveSpeed;
+    public float diveSpeed;
     public float maxHP;
 
     public LayerMask groundLayer;

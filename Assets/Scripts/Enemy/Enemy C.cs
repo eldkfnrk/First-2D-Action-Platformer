@@ -17,10 +17,12 @@ public class EnemyC : Enemy
     ContactFilter2D playerFilter;
     Collider2D[] detectPlayer;
 
+    float goHighTimer;
+
     protected override void Awake()
     {
         base.Awake();
-        variableData.detectPlayerBoxPos = transform.position;  // 이 타입의 적은 자신의 영역의 침범을 검사하는 것이기에 고정된 위치를 사용. 그래서 이를 Awake에서 적용.
+        variableData.detectPlayerBoxPos = (Vector2)transform.position + constantData.detectPlayerBoxOffset;  // 이 타입의 적은 자신의 영역의 침범을 검사하는 것이기에 고정된 위치를 사용. 그래서 이를 Awake에서 적용.
         detectPlayer = new Collider2D[4];  // 플레이어의 하위 오브젝트가 추가될 수 있고 그 중 판단해야 하는 것이 있을 수 있으니 넉넉한 크기로 잡고 수행
         playerFilter.useLayerMask = true;
         playerFilter.SetLayerMask(constantData.playerLayer);
@@ -45,6 +47,40 @@ public class EnemyC : Enemy
         StateIdle();
     }
 
+    protected override void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            if (variableData.isAttack)
+            {
+                variableData.isCrush = true;
+                EnemyStop();
+                CrushRoutineStart();
+            }
+            else
+            {
+
+            }
+        }
+    }
+
+    protected override void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Block"))
+        {
+            if (variableData.isAttack)
+            {
+                variableData.isCrush = true;
+                EnemyStop();
+                CrushRoutineStart();
+            }
+            else
+            {
+
+            }
+        }
+    }
+
     public override bool DetectPlayer()
     {
         int isDetect = Physics2D.OverlapBox(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
@@ -52,15 +88,65 @@ public class EnemyC : Enemy
         return isDetect == 1;
     }
 
+    public override void StateChase()
+    {
+        rigid.linearVelocityY = -0.5f;
+        base.StateChase();
+    }
+
     public override void ActionIdle()
     {
         // 다른 동작을 넣을 것은 없지만 이 함수를 그대로 사용하면 Move 상태로 변하기 때문에 override 해서 내용을 비워두었다. 추후에 추가할 내용이 있다면 추가할 예정
     }
 
-    public override void StateChase()
+    public override void ActionMove()
     {
-        rigid.linearVelocityY = -0.5f;
-        base.StateChase();
+        EnemyMove();
+        ChangeAction();
+    }
+
+    public override void ActionChase()
+    {
+        EnemyChaseMove();
+    }
+
+    public override void ActionAttack()
+    {
+        if (!variableData.isAttack)
+        {
+            StateMove();
+            return;
+        }
+
+        if (variableData.isCrush)
+            return;
+
+        if(variableData.frontCheck.collider != null || variableData.floorCheck.collider != null)
+        {
+            variableData.isCrush = true;
+            EnemyStop();
+            CrushRoutineStart();
+        }
+    }
+
+    public override void ChangeAction()
+    {
+        goHighTimer += Time.deltaTime;
+
+        if(goHighTimer > 1f)
+        {
+            if (!DetectPlayer())
+                StateGoBack();
+            else
+                StateChase();
+
+            goHighTimer = 0f;
+        }
+    }
+
+    public override void EnemyMove()
+    {
+        rigid.linearVelocityY = constantData.moveSpeed;
     }
 
     public override void EnemyChaseMove()
@@ -72,17 +158,20 @@ public class EnemyC : Enemy
             return;
         }
 
-        variableData.playerEnemyXDistance = GameManager.instance.player.transform.position.x - transform.position.x;
+        variableData.playerEnemyXDistance = transform.position.x - GameManager.instance.player.transform.position.x;
         variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
-        if (variableData.moveDir != variableData.sightDirection)
-            ChangeDirection();
+        rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed * 0.25f;  // 평시 속도의 반의 반 정도 속도로 플레이어에게서 x축으로 멀어지도록 설정
 
-        rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed * 0.5f;  // 평시 속도의 반 정도 속도로 플레이어에게서 x축으로 멀어지도록 설정
+        // 이 적은 플레이어를 바라보면서 멀어질 것이기 때문에 바라보는 방향과 이동 방향이 다르도록 설정
+        if (variableData.moveDir == variableData.sightDirection)
+            ChangeDirection();
     }
 
     public override void EnemyAttack()
     {
-        base.EnemyAttack();
+        enemyAnimation.PlayAttack();
+        variableData.attackDir = (GameManager.instance.player.transform.position - transform.position).normalized;
+        rigid.linearVelocity = variableData.attackDir * constantData.diveSpeed;
     }
 
     protected override IEnumerator HitRoutine()
@@ -108,5 +197,7 @@ public class EnemyC : Enemy
         if (!Application.isPlaying) return;
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
+        Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
+        Gizmos.DrawRay(transform.position, Vector2.right * constantData.frontCheckDistance * variableData.sightDirection);
     }
 }
