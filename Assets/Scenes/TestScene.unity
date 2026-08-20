@@ -354,9 +354,9 @@ GameObject:
   - component: {fileID: 577943876}
   - component: {fileID: 577943875}
   - component: {fileID: 577943874}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: eagle-attack-1
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -473,6 +473,7 @@ MonoBehaviour:
   constantData: {fileID: 11400000, guid: 2253b149f1c0b5d4db5353731168cf34, type: 2}
   enemyAnimation: {fileID: 0}
   actionTimer: 0
+  boundaryHeight: 6
 --- !u!114 &577943875
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,9 +490,10 @@ MonoBehaviour:
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
+  detectPlayerBoxSize: {x: 12, y: 12}
   floorCheckOrigin: {x: 0, y: 0}
   attackDir: {x: 0, y: 0}
-  moveDir: 0
+  moveDir: {x: 0, y: 0}
   playerEnemyXDistance: 0
   cantMove: 0
   knockbackDir: {x: 0, y: 0}
@@ -513,7 +515,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimation
   animators:
   - {fileID: 9100000, guid: 6f462620e81c7be4f9c392f019bc7c72, type: 2}
-  - {fileID: 9100000, guid: 6f462620e81c7be4f9c392f019bc7c72, type: 2}
+  - {fileID: 0}
   - {fileID: 9100000, guid: fcc5c1c6d7b35784aa234aa8b146197f, type: 2}
   - {fileID: 9100000, guid: 8bb0af3bbf5caa94199150101567a29d, type: 2}
 --- !u!114 &577943877
@@ -911,9 +913,10 @@ MonoBehaviour:
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
+  detectPlayerBoxSize: {x: 0, y: 0}
   floorCheckOrigin: {x: 0, y: 0}
   attackDir: {x: 0, y: 0}
-  moveDir: 0
+  moveDir: {x: 0, y: 0}
   playerEnemyXDistance: 0
   cantMove: 0
   knockbackDir: {x: 0, y: 0}
@@ -8195,9 +8198,10 @@ MonoBehaviour:
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
+  detectPlayerBoxSize: {x: 0, y: 0}
   floorCheckOrigin: {x: 0, y: 0}
   attackDir: {x: 0, y: 0}
-  moveDir: 0
+  moveDir: {x: 0, y: 0}
   playerEnemyXDistance: 0
   cantMove: 0
   knockbackDir: {x: 0, y: 0}

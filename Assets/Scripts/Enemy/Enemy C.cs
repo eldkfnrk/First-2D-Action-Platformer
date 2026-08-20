@@ -83,15 +83,72 @@ public class EnemyC : Enemy
 
     public override bool DetectPlayer()
     {
-        int isDetect = Physics2D.OverlapBox(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
+        int isDetect = Physics2D.OverlapBox(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
 
         return isDetect == 1;
     }
 
+    public override bool ArriveSpawnLoc()
+    {
+        if (Mathf.Abs(variableData.spawnLoc.x - transform.position.x) < 0.1f)
+        {
+            StateIdle();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override void StateMove()
+    {
+        fsm.ChangeState(State.Move);
+        variableData.moveDir.x = 0f;
+        variableData.moveDir.y = 1f;
+        enemyAnimation.PlayIdle();
+    }
+
     public override void StateChase()
     {
+        fsm.ChangeState(State.Chase);
+        variableData.cantMove = false;
+        actionTimer = 0f;
+        enemyAnimation.PlayIdle();
         rigid.linearVelocityY = -0.5f;
-        base.StateChase();
+        variableData.detectPlayerBoxSize.x += 6f;
+    }
+
+    public override void StateGoBack()
+    {
+        fsm.ChangeState(State.GoBack);
+        variableData.cantMove = false;
+        variableData.moveDir = (variableData.spawnLoc - transform.position).normalized;
+        float goBackDirection = variableData.moveDir.x / Mathf.Abs(variableData.moveDir.x);
+        if (goBackDirection != variableData.sightDirection)
+            ChangeDirection();
+    }
+
+    public override void StateHit()
+    {
+        // 공격 상황에서 피격 당하면 이 함수가 여러 번 호출되고 있는 문제 발생
+        // isHit가 false가 되어야 피격이 중지되는데 isHit를 false로 바꾸는 작업이 진행되지 않아 FSM에서 계속 Hit 상태가 되도록 호출하였기 때문이었다.
+        actionTimer = 0f;
+        variableData.curHP -= 1f;
+        
+        // 바닥이나 벽, 플레이어 등과 충돌해서 더 이상 공격 동작은 아니지만 공격 상태인 경우 피격 동작을 하도록 isCrush를 검사
+        if(enemyState != State.Attack || variableData.isCrush)
+        {
+            variableData.isCrush = false;
+            variableData.isAttack = false;
+            fsm.ChangeState(State.Hit);
+            EnemyStop();
+            EnemyHit();
+        }
+        else
+        {
+            variableData.isHit = false;  // 공격 중이니 데미지만 입고 더 이상의 피격은 일어나지 않도록 설정이 필요함
+            // 만약 데미지 이펙트가 있다면 그것을 재생시키는 코드 추가
+        }
+
     }
 
     public override void ActionIdle()
@@ -129,6 +186,51 @@ public class EnemyC : Enemy
         }
     }
 
+    [SerializeField] private float boundaryHeight;
+
+    public override void ActionHit()
+    {
+        if (!variableData.isHit)
+        {
+            if (transform.position.y - GameManager.instance.player.transform.position.y < boundaryHeight)
+                fsm.ChangeState(State.Move);
+            else
+                fsm.ChangeState(State.Chase);
+        }
+    }
+
+    // 아이디어
+    // 1. 적이 공격이 끝나면 자신의 범위 내에서 플레이어를 탐지
+    // 2. 탐지를 하지 못했다면 영역 내에 있는지 탐지
+    // 3. 피격 시 경계 상태로 전환 - 경계 상태에서는 탐지 범위를 카메라 범위까지 증가(이를 따로 측정하여 지정)
+    // 4. 플레이어의 카메라 범위에 적이 없다면 해당 적은 경계 태세를 풀고 원래 자리로 돌아가도록 설정
+    // 5. 타입 C 적은 자신의 영역이 있고 경계 상태가 된 후에는 자신의 탐지 범위가 있도록 설정
+    // 6. 이러면 많이 멀어져도 플레이어를 쫓도록 만들 수 있고 돌아가다가 등을 노리는 플레이어를 탐지할 수도 있기 때문으로 각각 동작하도록 설정
+
+    // Hit 상태가 될 때 주의점
+    // 탐지 범위를 따로 고정하는 값이 필요(Chase나 Move 등에서도 활용할 수 있도록 설정)
+    // 공통점(Attack 제외) - 속도가 있었을 것을 가정하고 모든 속도를 일시적으로 0으로 만든다.
+    // Idle - 없음
+    // Chase - 공격을 하기 위한 대기 시간(actionTimer)을 0.25초 정도만 줄여서 공격 준비 시간을 
+    // Attack - 데미지만 입고 공격은 지속되도록 설정해야 한다.
+    // Move - 바로 Chase 상태가 되도록 하기 위해 필요한 설정들을 확인
+    // GoBack - 없음
+
+    // Hit 상태 동작
+    // 피격된 방향의 반대 방향으로 넉백 발생
+    // 일시적으로 행동 불가
+
+    // Hit 상태 후 동작
+    // Hit -> Chase -> Attack or GoBack
+    // 수정본 : Hit -> 플레이어와 이 오브젝트의 높이 차이를 확인하여 일정 수치 이하라면 Move 일정 수치 위에 있다면 Chase 상태로 전환
+    // 해당 적에만 있는 변수를 하나 만들고 여기에 수치를 저장하여 활용할 계획
+
+    // 버그 리포트
+    // 플레이어를 향한 돌진 공격을 하고 벽이나 바닥, 플레이어를 만나지 않으면 멈추지 않는 논리적 오류가 발생
+    // 공격 후 Move 상태가 될 때 피격을 당하면 바로 Chase 상태가 되어버리고 제대로 된 애니메이션 전환 및 공격 진행이 안 되는 논리적 오류 발생
+    // 공격 중에도 동일한 문제 발생
+
+
     public override void ChangeAction()
     {
         goHighTimer += Time.deltaTime;
@@ -141,12 +243,13 @@ public class EnemyC : Enemy
                 StateChase();
 
             goHighTimer = 0f;
+            variableData.detectPlayerBoxSize.x -= 6f;
         }
     }
 
     public override void EnemyMove()
     {
-        rigid.linearVelocityY = constantData.moveSpeed;
+        rigid.linearVelocity = variableData.moveDir * constantData.moveSpeed;
     }
 
     public override void EnemyChaseMove()
@@ -159,11 +262,11 @@ public class EnemyC : Enemy
         }
 
         variableData.playerEnemyXDistance = transform.position.x - GameManager.instance.player.transform.position.x;
-        variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
-        rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed * 0.25f;  // 평시 속도의 반의 반 정도 속도로 플레이어에게서 x축으로 멀어지도록 설정
+        variableData.moveDir.x = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
+        rigid.linearVelocityX = variableData.moveDir.x * constantData.moveSpeed * 0.25f;  // 평시 속도의 반의 반 정도 속도로 플레이어에게서 x축으로 멀어지도록 설정
 
         // 이 적은 플레이어를 바라보면서 멀어질 것이기 때문에 바라보는 방향과 이동 방향이 다르도록 설정
-        if (variableData.moveDir == variableData.sightDirection)
+        if (variableData.moveDir.x == variableData.sightDirection)
             ChangeDirection();
     }
 
@@ -196,7 +299,7 @@ public class EnemyC : Enemy
     {
         if (!Application.isPlaying) return;
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
+        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize);
         Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.frontCheckDistance * variableData.sightDirection);
     }

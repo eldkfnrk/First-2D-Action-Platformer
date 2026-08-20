@@ -139,7 +139,7 @@ public class Enemy : MonoBehaviour
     {
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
-        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
 
         // 앞에 벽이 있는 경우 탐지하지 못하는 것으로 설정
         if(variableData.frontCheck.collider != null)
@@ -187,7 +187,7 @@ public class Enemy : MonoBehaviour
 
     public virtual void StateIdle()
     {
-        variableData.moveDir = 0f;
+        variableData.moveDir.x = 0f;
         fsm.ChangeState(State.Idle);
         enemyAnimation.PlayIdle();
     }
@@ -224,6 +224,7 @@ public class Enemy : MonoBehaviour
 
     public virtual void StateHit()
     {
+        variableData.curHP -= 1f;  // 지금 당장 플레이어의 공격 데미지가 없기 때문에 임시로 1f라는 값을 써서 피격 시 1f씩 피가 닳도록 설정
         fsm.ChangeState(State.Hit);
         EnemyStop();
         EnemyHit();
@@ -295,6 +296,14 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    public virtual void ActionHit()
+    {
+        if (!variableData.isHit)
+        {
+            fsm.ChangeState(State.Chase);
+        }
+    }
+
     public void ChangeChase()
     {
         actionTimer = 0f;
@@ -313,7 +322,7 @@ public class Enemy : MonoBehaviour
     }
 
     // GoBack 상태에서 스폰한 위치에 도착하면 상태 전환을 하기 위한 함수
-    public bool ArriveSpawnLoc()
+    public virtual bool ArriveSpawnLoc()
     {
         if (Mathf.Abs(variableData.spawnLoc.x - transform.position.x) < 0.1f)
         {
@@ -338,10 +347,10 @@ public class Enemy : MonoBehaviour
     public virtual void EnemyChaseMove()
     {
         variableData.playerEnemyXDistance = GameManager.instance.player.transform.position.x - transform.position.x;
-        variableData.moveDir = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
+        variableData.moveDir.x = variableData.playerEnemyXDistance / Mathf.Abs(variableData.playerEnemyXDistance);
         variableData.playerEnemyXDistance = Mathf.Abs(variableData.playerEnemyXDistance);
-        rigid.linearVelocityX = variableData.moveDir * constantData.moveSpeed;
-        if (variableData.moveDir != variableData.sightDirection)
+        rigid.linearVelocityX = variableData.moveDir.x * constantData.moveSpeed;
+        if (variableData.moveDir.x != variableData.sightDirection)
             ChangeDirection();
     }
 
@@ -373,9 +382,8 @@ public class Enemy : MonoBehaviour
     }
 
     // 피격
-    public void EnemyHit()
+    public virtual void EnemyHit()
     {
-        variableData.curHP -= 1f;  // 지금 당장 플레이어의 공격 데미지가 없기 때문에 임시로 1f라는 값을 써서 피격 시 1f씩 피가 닳도록 설정
         StartCoroutine(HitRoutine());
     }
 

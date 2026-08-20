@@ -21,6 +21,14 @@ public class EnemyA : Enemy
         EnemyMove();
     }
 
+    public override void ActionHit()
+    {
+        if (!variableData.isHit)
+        {
+            fsm.ChangeState(State.Move);
+        }
+    }
+
     private void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;

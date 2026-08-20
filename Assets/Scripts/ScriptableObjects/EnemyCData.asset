@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   moveSpeed: 5
   diveSpeed: 11
-  maxHP: 0
+  maxHP: 3
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -23,8 +23,7 @@ MonoBehaviour:
     m_Bits: 256
   floorCheckOffsetX: 0.2
   detectPlayerBoxOffset: {x: 0, y: 0}
-  detectPlayerBoxSize: {x: 10, y: 10}
   maxDistance: 0
-  knockbackPower: 0
+  knockbackPower: 5
   frontCheckDistance: 0.8
   floorCheckDistance: 0.8
