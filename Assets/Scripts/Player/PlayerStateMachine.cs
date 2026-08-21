@@ -397,6 +397,21 @@ public class PlayerStateMachine : MonoBehaviour
             variableData.successBlock = true;
             SuccessBlock();
         }
+
+        if (collision.gameObject.CompareTag("Door"))
+        {
+            variableData.canInteractive = true;
+            variableData.doorSpawnPoint = collision.gameObject.GetComponent<SpawnPoint>();
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Door"))
+        {
+            variableData.canInteractive = false;
+            variableData.doorSpawnPoint = null;
+        }
     }
 
     private void OnDrawGizmos()
@@ -589,6 +604,9 @@ public class WallSlideState : BaseState
 
     public override void Update()
     {
+        // 벽이 아닌 곳에서도 벽에 있다는 판정이 계속되는 버그 발견
+        // 벽에서 미끄러지는 상태에서 벽이 끊기면 상태도 전환이 되어야 하는데 그렇지 못하는 상태이다.
+
         if(fsmController.variableData.groundCheck.collider != null)
         {
             fsmController.Idle();

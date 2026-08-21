@@ -69,6 +69,14 @@ public class PlayerInputManager : MonoBehaviour
             variableData.isBlock = false;
     }
 
+    public void OnInteract(InputAction.CallbackContext context)
+    {
+        if(context.started && player.variableData.canInteractive)
+        {
+            GameManager.instance.SceneChange(variableData.doorSpawnPoint);
+        }
+    }
+
     public void OnDeath(InputAction.CallbackContext context)
     {
         if (context.started && variableData.isDead)

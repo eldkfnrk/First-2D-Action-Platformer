@@ -171,6 +171,7 @@ public class EnemyC : Enemy
     {
         if (!variableData.isAttack)
         {
+            actionTimer = 0f;
             StateMove();
             return;
         }
@@ -178,12 +179,32 @@ public class EnemyC : Enemy
         if (variableData.isCrush)
             return;
 
-        if(variableData.frontCheck.collider != null || variableData.floorCheck.collider != null)
+        actionTimer += Time.deltaTime;
+
+        if (variableData.frontCheck.collider != null || variableData.floorCheck.collider != null)
         {
             variableData.isCrush = true;
+            actionTimer = 0f;
             EnemyStop();
             CrushRoutineStart();
         }
+
+        // 플레이어, 벽, 바닥 이 3가지 중 하나와도 충돌하지 않고 2초가 지나면 일정 시간 경직을 추고 다시 Chase 상태로 바꾸도록 진행
+        if (actionTimer > 2.5f)
+        {
+            actionTimer = 0f;
+            StartCoroutine(AttackStopRoutine());
+        }
+    }
+
+    IEnumerator AttackStopRoutine()
+    {
+        variableData.isCrush = true;
+        EnemyStop();
+        yield return new WaitForSeconds(0.3f);
+        variableData.isCrush = false;
+        variableData.isAttack = false;
+        StateChase();
     }
 
     [SerializeField] private float boundaryHeight;

@@ -24,6 +24,9 @@ public class PlayerRuntimeData : MonoBehaviour
     public Vector2 attackBoxPos;
     public Vector2 attackDir;
 
+    public bool canInteractive;
+    public SpawnPoint doorSpawnPoint;
+
     public bool isRoll;
     public bool isWall;
     public bool isAttack;
