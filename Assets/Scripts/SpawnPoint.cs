@@ -11,9 +11,4 @@ public class SpawnPoint : MonoBehaviour
 
     public PointID id;
     public PointID targetId;
-
-    private void Start()
-    {
-        GameManager.instance.spawnSystem.GetComponent<SpawnSystem>().SaveSpawnPoint(this);
-    }
 }

@@ -152,6 +152,7 @@ public class PlayerStateMachine : MonoBehaviour
         if (rigid.gravityScale != 1f)
             rigid.gravityScale = 1f;
         variableData.isJump = false;
+        variableData.isWall = false;
         ChangeState(State.Idle);
         playerAnimation.PlayIdle();
     }
@@ -190,6 +191,8 @@ public class PlayerStateMachine : MonoBehaviour
     {
         if (!variableData.isJump)
             variableData.isJump = true;
+        if (variableData.isWall)
+            variableData.isWall = false;
 
         rigid.gravityScale = constantData.fallSpeed;
         ChangeState(State.Fall);
@@ -604,11 +607,12 @@ public class WallSlideState : BaseState
 
     public override void Update()
     {
-        // 벽이 아닌 곳에서도 벽에 있다는 판정이 계속되는 버그 발견
-        // 벽에서 미끄러지는 상태에서 벽이 끊기면 상태도 전환이 되어야 하는데 그렇지 못하는 상태이다.
+        // 벽을 검사하는 Ray가 중앙에 있어서 다리 부근이 벽과 충돌하면 그냥 멈추는 문제가 존재
+        // 벽을 검사하는 Ray를 2개를 둬서 2개 다 벽을 감지해야 벽과 충돌한 상황이라고 보거나 overlapbox를 이용하여 벽을 판단하거나 해야 할 것으로 추측 중이다.
 
-        if(fsmController.variableData.groundCheck.collider != null)
+        if (fsmController.variableData.groundCheck.collider != null || fsmController.variableData.wallCheck.collider == null)
         {
+            fsmController.ChangeSight();
             fsmController.Idle();
             return;
         }

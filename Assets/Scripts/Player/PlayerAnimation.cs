@@ -28,7 +28,8 @@ public class PlayerAnimation : MonoBehaviour
 
     public void PlayIdle()
     {
-        animator.SetBool("Grounded", true); 
+        animator.SetBool("Grounded", true);
+        animator.SetBool("WallSlide", false);
         animator.SetBool("IdleBlock", false); 
         animator.SetFloat("AirSpeedY", 0f);
         animator.SetInteger("AnimState", 0);

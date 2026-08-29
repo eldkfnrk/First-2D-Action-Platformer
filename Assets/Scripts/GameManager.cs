@@ -1,4 +1,5 @@
 using System;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -16,11 +17,15 @@ public class GameManager : MonoBehaviour
     SpawnPoint.PointID playerSpawnPointId;
 
     public Area area;
-    string curSceneName;
+    public string curSceneName;
 
     public static GameManager instance;
     public GameObject player;
     public GameObject playerPrefab;
+    public PlayerStatus playerStatus;
+    public GameObject mainCamera;
+    public GameObject mainCameraPrefab;
+    public GameObject playerCamera;
 
     // 플레이어 사망을 알리는 이벤트
     public event System.Action playerDeathEvent;
@@ -32,38 +37,37 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        if(instance == null)
+        if(instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        else
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
         }
-        else
+
+        mainCamera = Instantiate(mainCameraPrefab);
+        DontDestroyOnLoad(mainCamera);
+        FindPlayerCamera();
+
+        Vector3 playerPos = Vector3.zero;
+        GameObject existPlayer = GameObject.FindGameObjectWithTag("Player");
+        if (existPlayer != null)
         {
-            Destroy(this);
+            playerPos = existPlayer.transform.position;
+            Destroy(existPlayer);
         }
+        player = Instantiate(playerPrefab);
+        player.transform.position = playerPos;
+        DontDestroyOnLoad(player);
+
         curSceneName = SceneManager.GetActiveScene().name;
         area = (Area)Enum.Parse(typeof(Area), curSceneName);
+        // 저장 데이터가 있다면 해당 위치로 생성하고 지금 당장은 원래 플레이어가 있던 위치에 생성되도록 설정
         playerSpawnPointId = SpawnPoint.PointID.None;
         SceneManager.sceneLoaded += OnSceneLoad;
-    }
-
-    private void Start()
-    {
-        
-    }
-
-    // 이번에 보스전에 몰두하여 FSM을 반드시 구현해야 한다라는 생각에 매몰되었고 그로 인해 구현은 안 되고 시간만 소비하는 날도 있었고 높은 난이도에 시작 저항감이 상승하기만 하였다.
-    // 그래서 순서를 바꿔서 여러 장애물과 나를 탐지하고 따라오는 적을 만들어보는 과정을 먼저 하면서 2d 메트로배니아라는 장르의 게임을 제대로 만들어 보는 시간을 가져보려 한다.
-    // 그러기 위해 우선 게임 디자인에 대해서 더 잘 알아야 하고 게임을 하다가 이게 여기에 왜 등장해야 하는지 등을 알아보기 위해 유명 메트로배니아 게임인 할로우 나이트와 오리 시리즈를 플레이 해보면서
-    // 레벨 디자인, 전투 디자인, 플레이어에게 기술을 알려주는 여러 게임적 디자인을 배워보는 시간을 함께 가져가보면 좋겠다 생각하였고 이를 바탕으로 하나씩 나의 게임에도 살을 붙여나가보면 좋을 거 같다.
-    // 레벨 디자인은 전체적으로 씬을 분할해 볼 예정이고 언제 왜 이걸 습득해야 하는지 등을 고민해보는 시간도 함께 가져 볼 예정이다.
-
-    // 만들어 볼 순서
-    // 씬 간 이동 - 순찰하는 적이 있는 씬(발각 시 달려드는 적) - 전투 씬(미니 보스) - 체크 포인트 - 능력 획득 - 아이템 획득 - 보스 씬
-
-    void Update()
-    {
-        
     }
 
     public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackBoxPos)
@@ -90,34 +94,61 @@ public class GameManager : MonoBehaviour
 
         playerSpawnPointId = startPoint.targetId;
 
+        // LoadScene - 이 함수가 반환되면 기존 씬은 메모리에서 삭제되고 이동하고자 하는 씬의 Awake, OnEnable, Start이 완료된다.
+        // sceneLoaded 이벤트는 Awake-OnEnable이 끝나고 Start 하기 전에 호출된다.
+        // 고민해 볼 해결 방안
+        // 1. 씬 전환을 알리는 bool 변수를 하나 두어서 이를 통해 관리한다.
+        // 2. 입력 값을 받고 나서 씬 전환 중일 땐 호출 불가 씬 종료 후에는 씬 전환 완료를 알리도록 하는 방법을 통해 관리한다.
         SceneManager.LoadScene(nextSceneName);
         // 페이드 인 효과 주기(코루틴 활용)
     }
 
     void CreateSpawnSystem()
     {
+        // 이 오브젝트는 원래 씬 내에 없기 때문에 씬 전환 시 자동 삭제가 되기 때문에 매 씬 전환마다 생성해주어야 한다.
         GameObject spawnSystemObj = new GameObject();
         spawnSystemObj.name = "SpawnSystem";
         spawnSystemObj.transform.position = Vector3.zero;
         spawnSystem = spawnSystemObj.AddComponent<SpawnSystem>();
+
+        // 이동한 씬에 있는 모든 스폰 포인트를 스폰 시스템에 저장해 두는 작업
+        SpawnPoint[] spawnPoints = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
+        foreach(SpawnPoint spawnPoint in spawnPoints)
+        {
+            spawnSystem.SaveSpawnPoint(spawnPoint);
+        }
     }
 
-    void CreatePlayer()
+    void PlayerTransformShift()
     {
-        if (player != null)
+        if (playerSpawnPointId == SpawnPoint.PointID.None)
             return;
-        player = Instantiate(playerPrefab);
-        // 지금 당장은 임시 방편으로 사용(그러나 스폰 시스템과 이벤트, 씬과 관련된 것들을 어느 정도 정리 및 습득하면 수정)
-        SpawnPoint[] points = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
-        foreach(SpawnPoint point in points)
+
+        GameObject[] playerObjs = GameObject.FindGameObjectsWithTag("Player");
+        if (playerObjs.Length > 1)
         {
-            if (point.id == playerSpawnPointId)
+            foreach (GameObject playerObj in playerObjs)
             {
-                player.transform.position = point.transform.position;
-                break;
+                if (player != playerObj)
+                {
+                    Destroy(playerObj);
+                    break;
+                }
             }
         }
-        playerSpawnPointId = SpawnPoint.PointID.None;
+        player.transform.position = spawnSystem.TakeSpawnPoint(playerSpawnPointId);
+    }
+
+    void FindPlayerCamera()
+    {
+        playerCamera = GameObject.FindGameObjectWithTag("PlayerCamera");
+    }
+
+    void CameraTargetPlayer()
+    {
+        CinemachineCamera cinemachine = playerCamera.GetComponent<CinemachineCamera>();
+        cinemachine.Follow = player.transform;
+        cinemachine.LookAt = player.transform;
     }
 
     void OnSceneLoad(Scene scene, LoadSceneMode mode)
@@ -125,7 +156,32 @@ public class GameManager : MonoBehaviour
         curSceneName = scene.name;
         area = (Area)Enum.Parse(typeof(Area), curSceneName);
         CreateSpawnSystem();
-        CreatePlayer();
+        PlayerTransformShift();
+        FindPlayerCamera();
+        CameraTargetPlayer();
         Debug.Log("씬 변환 완료. 현재 씬 : " + curSceneName);
     }
+
+    // 현재 아이디어
+    // 게임 시작 전 메인 페이지에 해당하는 씬이 존재하도록 설정
+    // 게임 시작 시 게임 매니저를 생성함과 동시에 DontDestroyOnLoad로 설정
+    // 게임 매니저가 플레이어와 메인 카메라와 같은 DontDestroyOnLoad를 생성 및 설정
+    // 게임은 데이터를 저장하는데 현재 씬과 플레이어의 위치, 플레이어 데이터, 게임 진행에 관련된 데이터 등을 저장
+    // 게임 매니저가 저장된 데이터를 적용 및 오브젝트 생성, 위치 선정 등을 수행
+
+    // 현재 목표(이 포폴에 추가했으면 하는 요소들)
+    // 간단한 3타입의 적 생성
+    // 플레이어의 자연스러운 상태 전환
+    // 1개의 보스 생성
+    // 대화 시스템
+    // 간단한 컷씬 1개
+    // 저장과 불러오기 기능
+    // 숙련도 시스템
+    // 상점 거래
+
+    // 이 포폴로 얻고자 하는 것
+    // FSM, Tree 등과 같은 자료구조와 알고리즘 적용 연습
+    // JSON이나 플레이어 프립과 같은 저장 시스템과 불러오기 시스템 습득
+    // 대화 시스템을 통한 데이터 연결 관련 기술 습득
+    // 간단한 컷씬을 통해 카메라와 애니메이션 관련 기술 습득
 }
