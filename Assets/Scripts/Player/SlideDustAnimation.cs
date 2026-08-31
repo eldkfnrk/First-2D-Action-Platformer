@@ -9,7 +9,13 @@ public class SlideDustAnimation : MonoBehaviour
     private void Awake()
     {
         slideDustVFX = this.gameObject;
-        slideDustPos.x = 0.25f;
+    }
+
+    private void OnEnable()
+    {
+        float sight = GetComponentInParent<PlayerRuntimeData>().sightDirection;
+        transform.localRotation = sight == 1 ? Quaternion.identity : Quaternion.Euler(0, 180, 0);
+        slideDustPos.x = sight * 0.25f;
         slideDustPos.y = 0.7f;
     }
 

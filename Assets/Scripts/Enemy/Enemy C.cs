@@ -81,12 +81,12 @@ public class EnemyC : Enemy
         }
     }
 
-    public override bool DetectPlayer()
-    {
-        int isDetect = Physics2D.OverlapBox(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
+    //public override bool DetectPlayer()
+    //{
+    //    int isDetect = Physics2D.OverlapBox(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
 
-        return isDetect == 1;
-    }
+    //    return isDetect == 1;
+    //}
 
     public override bool ArriveSpawnLoc()
     {
@@ -114,7 +114,7 @@ public class EnemyC : Enemy
         actionTimer = 0f;
         enemyAnimation.PlayIdle();
         rigid.linearVelocityY = -0.5f;
-        variableData.detectPlayerBoxSize.x += 6f;
+        //variableData.detectPlayerBoxSize.x += 6f;
     }
 
     public override void StateGoBack()
@@ -264,7 +264,7 @@ public class EnemyC : Enemy
                 StateChase();
 
             goHighTimer = 0f;
-            variableData.detectPlayerBoxSize.x -= 6f;
+            //variableData.detectPlayerBoxSize.x -= 6f;
         }
     }
 
@@ -320,7 +320,7 @@ public class EnemyC : Enemy
     {
         if (!Application.isPlaying) return;
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize);
+        //Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize);
         Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.frontCheckDistance * variableData.sightDirection);
     }

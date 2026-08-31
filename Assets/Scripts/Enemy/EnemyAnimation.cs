@@ -5,6 +5,7 @@ public class EnemyAnimation : MonoBehaviour
     // 규칙 : 아래의 배열에는 열거형 State 순서대로 값을 저장해 놓도록 하여야 한다.(나중에 추가되면 그때 인덱스를 전환해도 되니 일단 이 상태로 진행)
     // 만약 애니메이터가 하나라면 동작 쪽에서 알아서 애니메이션을 딱 한 번만 재생시키도록 설정한다.
     public RuntimeAnimatorController[] animators;
+    public RuntimeAnimatorController deadAnimator;
     Animator anim;
 
     void InitializeAnimator()
@@ -39,5 +40,10 @@ public class EnemyAnimation : MonoBehaviour
     public void PlayHit()
     {
         anim.runtimeAnimatorController = animators[3];
+    }
+
+    public void PlayDeath()
+    {
+        anim.runtimeAnimatorController = deadAnimator;
     }
 }

@@ -14,7 +14,7 @@ public class EnemyB : Enemy
     {
         if (!Application.isPlaying) return;
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize);
+        //Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize);
         Gizmos.color = Color.darkGray;
         Gizmos.DrawRay(transform.position, Vector2.right * variableData.sightDirection * constantData.frontCheckDistance);
         Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);

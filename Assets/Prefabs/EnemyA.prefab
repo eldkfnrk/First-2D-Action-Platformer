@@ -220,6 +220,7 @@ MonoBehaviour:
   animators:
   - {fileID: 0}
   - {fileID: 9100000, guid: 92ac96d13992d1e45bb5519bc16468cf, type: 2}
+  deadAnimator: {fileID: 9100000, guid: 8aa61b6bb07648945ace945788b99869, type: 2}
 --- !u!114 &1077461693332180564
 MonoBehaviour:
   m_ObjectHideFlags: 0

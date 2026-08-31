@@ -25,7 +25,7 @@ public class EnemyA : Enemy
     {
         if (!variableData.isHit)
         {
-            fsm.ChangeState(State.Move);
+            StateMove();
         }
     }
 

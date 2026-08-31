@@ -22,6 +22,7 @@ public class Enemy : MonoBehaviour
     protected EnemyFSM fsm;
     protected Rigidbody2D rigid;
     protected SpriteRenderer sprtieR;
+    protected Collider2D coll;
     public EnemyRuntimeData variableData;
     public EnemyData constantData;
     public EnemyAnimation enemyAnimation;
@@ -50,6 +51,7 @@ public class Enemy : MonoBehaviour
     protected virtual void OnEnable()
     {
         variableData.curHP = constantData.maxHP;
+        coll.enabled = true;
         variableData.isDead = false;
         if(GameManager.instance != null)
         {
@@ -103,6 +105,7 @@ public class Enemy : MonoBehaviour
         fsm = GetComponent<EnemyFSM>();
         rigid = GetComponent<Rigidbody2D>();
         sprtieR = GetComponent<SpriteRenderer>();
+        coll = GetComponent<Collider2D>();
         variableData = GetComponent<EnemyRuntimeData>();
         enemyAnimation = GetComponent<EnemyAnimation>();
     }
@@ -139,7 +142,7 @@ public class Enemy : MonoBehaviour
     {
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
-        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        //variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
 
         // 앞에 벽이 있는 경우 탐지하지 못하는 것으로 설정
         if(variableData.frontCheck.collider != null)
@@ -290,7 +293,7 @@ public class Enemy : MonoBehaviour
         if (!variableData.isAttack)
         {
             if (GetType() == typeof(EnemyA))
-                fsm.ChangeState(Enemy.State.Move);
+                StateMove();
             else
                 fsm.ChangeState(Enemy.State.Chase);
         }
@@ -300,7 +303,7 @@ public class Enemy : MonoBehaviour
     {
         if (!variableData.isHit)
         {
-            fsm.ChangeState(State.Chase);
+            StateChase();
         }
     }
 
@@ -415,6 +418,14 @@ public class Enemy : MonoBehaviour
     // 사망
     public void EnemyDeath()
     {
+        StartCoroutine(DeathRoutine());
+    }
+
+    IEnumerator DeathRoutine()
+    {
+        coll.enabled = true;
+        enemyAnimation.PlayDeath();
+        yield return new WaitForSeconds(0.15f);
         gameObject.SetActive(false);
     }
 }

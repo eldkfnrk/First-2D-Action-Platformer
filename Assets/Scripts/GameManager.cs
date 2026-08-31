@@ -87,12 +87,11 @@ public class GameManager : MonoBehaviour
 
     public void SceneChange(SpawnPoint startPoint)
     {
-        string targetPointId = startPoint.targetId.ToString();
+        playerSpawnPointId = startPoint.targetId;
+        string targetPointId = playerSpawnPointId.ToString();
         int index = targetPointId.IndexOf('_');
 
         string nextSceneName = index == -1 ? targetPointId : targetPointId.Substring(0, index);
-
-        playerSpawnPointId = startPoint.targetId;
 
         // LoadScene - 이 함수가 반환되면 기존 씬은 메모리에서 삭제되고 이동하고자 하는 씬의 Awake, OnEnable, Start이 완료된다.
         // sceneLoaded 이벤트는 Awake-OnEnable이 끝나고 Start 하기 전에 호출된다.
@@ -110,6 +109,8 @@ public class GameManager : MonoBehaviour
         spawnSystemObj.name = "SpawnSystem";
         spawnSystemObj.transform.position = Vector3.zero;
         spawnSystem = spawnSystemObj.AddComponent<SpawnSystem>();
+
+        spawnSystem.FindEnemySpawnPointsCollecter();
 
         // 이동한 씬에 있는 모든 스폰 포인트를 스폰 시스템에 저장해 두는 작업
         SpawnPoint[] spawnPoints = FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None);
@@ -159,6 +160,7 @@ public class GameManager : MonoBehaviour
         PlayerTransformShift();
         FindPlayerCamera();
         CameraTargetPlayer();
+        spawnSystem.EnemyRespawn();
         Debug.Log("씬 변환 완료. 현재 씬 : " + curSceneName);
     }
 

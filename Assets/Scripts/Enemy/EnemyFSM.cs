@@ -197,13 +197,7 @@ public class EnemyHitState : EnemyBaseState
 
     public override void StateUpdate()
     {
-        if (!fsmController.enemy.variableData.isHit)
-        {
-            if (fsmController.enemy.GetType() == typeof(EnemyA))
-                fsmController.ChangeState(Enemy.State.Move);
-            else
-                fsmController.ChangeState(Enemy.State.Chase);
-        }
+        fsmController.enemy.ActionHit();
     }
 
     public override void StateExit()
