@@ -31,7 +31,9 @@ public class PlayerData : ScriptableObject
     public WaitForSeconds cantInputDuration;
 
     public float groundCheckDistance;  // 땅을 체크할 거리
+    public Vector2 wallCheckBoxSize;  // 벽 탐지 범위
     public float wallCheckDistance;  // 벽을 체크할 거리
+    public float lowWallCheckOffset;  // 위 쪽에서 벽을 체크할 boxcast의 y축 오프셋(x축 이동은 없을테니 y축 값만 보유하도록 설정)
 
     public float knockbackXPower;  // x축 넉백 파워
     public float knockbackYPower;  // y축 넉백 파워

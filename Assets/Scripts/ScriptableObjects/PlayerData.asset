@@ -15,7 +15,7 @@ MonoBehaviour:
   maxHp: 3
   maxStamina: 0
   moveSpeed: 5
-  jumpPower: 9
+  jumpPower: 8
   hitWallPower: 4
   fallSpeed: 2.5
   rollSpeed: 10
@@ -30,7 +30,9 @@ MonoBehaviour:
   rollDurationTime: 0.45
   cantInputDurationTime: 0.2
   groundCheckDistance: 1
-  wallCheckDistance: 0.5
+  wallCheckBoxSize: {x: 0.2, y: 0.4}
+  wallCheckDistance: 0.4
+  lowWallCheckOffset: -0.7
   knockbackXPower: 5
   knockbackYPower: 3.5
   blockKnockbackPower: 3.5

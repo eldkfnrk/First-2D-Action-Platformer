@@ -16,7 +16,9 @@ public class PlayerRuntimeData : MonoBehaviour
     public bool rollKeyDown;
 
     public RaycastHit2D groundCheck;
-    public RaycastHit2D wallCheck;
+    public RaycastHit2D highWallCheck;
+    public RaycastHit2D lowWallCheck;
+    public Vector2 lowWallCheckOriginPos;
 
     public Vector2 wallJumpVec;
     public bool isJump;

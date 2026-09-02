@@ -142,7 +142,7 @@ public class Enemy : MonoBehaviour
     {
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
-        //variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, variableData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
 
         // 앞에 벽이 있는 경우 탐지하지 못하는 것으로 설정
         if(variableData.frontCheck.collider != null)

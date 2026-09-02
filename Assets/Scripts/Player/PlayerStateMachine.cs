@@ -122,7 +122,10 @@ public class PlayerStateMachine : MonoBehaviour
     private void FixedUpdate()
     {
         variableData.groundCheck = Physics2D.Raycast(transform.position, Vector2.down, constantData.groundCheckDistance, constantData.groundLayer);
-        variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
+        variableData.lowWallCheckOriginPos.x = transform.position.x;
+        variableData.lowWallCheckOriginPos.y = transform.position.y + constantData.lowWallCheckOffset;
+        variableData.highWallCheck = Physics2D.BoxCast(transform.position, constantData.wallCheckBoxSize, 0f, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
+        variableData.lowWallCheck = Physics2D.Raycast(variableData.lowWallCheckOriginPos, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
     }
 
     void EssenetialCheckLsit()
@@ -171,7 +174,8 @@ public class PlayerStateMachine : MonoBehaviour
         {
             // 벽 점프를 할 때 벽을 체크해버리면서 점프와 동시에 WallSlide로 변해버리는 문제가 있었고 이를 방지하기 위해 아예 점프 시에 몸을 반대로 돌렸다 생각하고 반대를 체크하도록 설정(이러면 점프할 때 바로 벽을 감지하지 않으면서 정상 작동한다.)
             ChangeSight();
-            variableData.wallCheck = Physics2D.Raycast(transform.position, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
+            variableData.highWallCheck = Physics2D.BoxCast(transform.position, constantData.wallCheckBoxSize, 0f, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer); ;
+            variableData.lowWallCheck = Physics2D.Raycast(variableData.lowWallCheckOriginPos, Vector2.right * variableData.sightDirection, constantData.wallCheckDistance, constantData.groundLayer);
             variableData.wallJumpVec.x = variableData.sightDirection * constantData.hitWallPower;
             variableData.wallJumpVec.y = constantData.jumpPower;
             variableData.cantInput = true;
@@ -279,18 +283,6 @@ public class PlayerStateMachine : MonoBehaviour
 
     public void Block()
     {
-        // 일반 방어는 몬스터들에게 뚫리니 사용하는 것은 스킬이라는 설정
-        // 모든 스킬은 마나를 소모
-        // 자연에 퍼져 있는 마나를 끌어와 쓴다는 설정으로 소울라이크 스테미너처럼 사용해도 빠르게 차도록 설정
-        // 적당한 소모량과 적당한 마나 회복량 설정이 중요할 것이라 판단
-        // 사용할 수 있는 소모량보다 적은 마나 상태라면 사용 불가
-
-        // 방어는 콜라이더 하나를 사용
-        // 해당 콜라이더는 방어 이펙트 같은 스프라이트를 하나 사용하는 방식으로 방어 범위를 표현하는 방안을 고민 중
-        // 위의 것을 도입한다면 방어 성공 시 해당 방어 이펙트의 애니메이션을 실행시켜 방어 효과를 눈으로 볼 수 있게 수정 가능
-        // 방어에 해당하는 콜라이더에 몬스터 공격이 닿으면 방어 성공으로 플레이어의 방어 성공 애니메이션 재생 및 적의 공격 방향을 x축만 습득하여 x축으로만 약간 넉백
-        // 방어 성공은 또 따로 함수 생성하여 구현
-
         if (playerState == State.Block)
             return;
 
@@ -423,7 +415,11 @@ public class PlayerStateMachine : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, Vector2.down * constantData.groundCheckDistance);
         Gizmos.color = Color.darkRed;
-        Gizmos.DrawRay(transform.position, Vector2.right * constantData.wallCheckDistance * variableData.sightDirection);
+        Vector2 highWallBoxPos;
+        highWallBoxPos.x = transform.position.x + constantData.wallCheckDistance * variableData.sightDirection;
+        highWallBoxPos.y = transform.position.y;
+        Gizmos.DrawWireCube(highWallBoxPos, constantData.wallCheckBoxSize);
+        Gizmos.DrawRay(variableData.lowWallCheckOriginPos, Vector2.right * variableData.sightDirection * constantData.wallCheckDistance);
         Gizmos.color = Color.black;
         if (attackBox)
             Gizmos.DrawWireCube(variableData.attackBoxPos, constantData.attackBoxSize);
@@ -451,7 +447,11 @@ public abstract class BaseState
         if (fsmController.variableData.cantInput)
             return;
 
-        fsmController.rigid.linearVelocityX = fsmController.variableData.moveDirection * fsmController.constantData.moveSpeed;
+        if (fsmController.variableData.lowWallCheck.collider != null)
+            fsmController.rigid.linearVelocityX = 0f;
+        else
+            fsmController.rigid.linearVelocityX = fsmController.variableData.moveDirection * fsmController.constantData.moveSpeed;
+
         if (fsmController.variableData.moveDirection != 0f && fsmController.variableData.sightDirection != fsmController.variableData.moveDirection)  // 바라보는 방향과 이동 방향이 반대인 경우
             fsmController.ChangeSight();
     }
@@ -543,7 +543,7 @@ public class JumpState : BaseState
             return;
         }
 
-        if(fsmController.variableData.wallCheck.collider != null)
+        if(fsmController.variableData.highWallCheck.collider != null)
         {
             fsmController.WallSlide();
             return;
@@ -580,7 +580,7 @@ public class FallState : BaseState
             return;
         }
 
-        if(fsmController.variableData.wallCheck.collider != null)
+        if(fsmController.variableData.highWallCheck.collider != null)
         {
             fsmController.WallSlide();
             return;
@@ -610,7 +610,7 @@ public class WallSlideState : BaseState
         // 벽을 검사하는 Ray가 중앙에 있어서 다리 부근이 벽과 충돌하면 그냥 멈추는 문제가 존재
         // 벽을 검사하는 Ray를 2개를 둬서 2개 다 벽을 감지해야 벽과 충돌한 상황이라고 보거나 overlapbox를 이용하여 벽을 판단하거나 해야 할 것으로 추측 중이다.
 
-        if (fsmController.variableData.groundCheck.collider != null || fsmController.variableData.wallCheck.collider == null)
+        if (fsmController.variableData.groundCheck.collider != null || fsmController.variableData.highWallCheck.collider == null)
         {
             fsmController.ChangeSight();
             fsmController.Idle();
@@ -657,7 +657,7 @@ public class RollState : BaseState
         }
 
         fsmController.rigid.linearVelocityY = 0f;
-        if (fsmController.variableData.wallCheck.collider != null)
+        if (fsmController.variableData.lowWallCheck.collider != null)
             fsmController.rigid.linearVelocityX = 0f;
         else
             fsmController.rigid.linearVelocityX = fsmController.constantData.rollSpeed * fsmController.variableData.sightDirection;

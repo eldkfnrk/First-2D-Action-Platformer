@@ -325,7 +325,6 @@ MonoBehaviour:
   sightDirection: 0
   spawnLoc: {x: 0, y: 0, z: 0}
   detectPlayerBoxPos: {x: 0, y: 0}
-  detectPlayerBoxSize: {x: 12, y: 12}
   floorCheckOrigin: {x: 0, y: 0}
   attackDir: {x: 0, y: 0}
   moveDir: {x: 0, y: 0}
@@ -6776,7 +6775,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 413485393070092348, guid: ab3458935cddb0a488594bae77aa39ab, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4526016076611433643, guid: ab3458935cddb0a488594bae77aa39ab, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6833,11 +6832,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1407319333735073420, guid: a3d812e9dab92a6478b55b43afff78c3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 39.67
+      value: 38.77
       objectReference: {fileID: 0}
     - target: {fileID: 1407319333735073420, guid: a3d812e9dab92a6478b55b43afff78c3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 11.92
+      value: 11.83
       objectReference: {fileID: 0}
     - target: {fileID: 1407319333735073420, guid: a3d812e9dab92a6478b55b43afff78c3, type: 3}
       propertyPath: m_LocalPosition.z
@@ -6910,7 +6909,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3364770619388943989, guid: b4a81f3e9d39f0345a984f6dc0f452e8, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4716010582568017648, guid: b4a81f3e9d39f0345a984f6dc0f452e8, type: 3}
       propertyPath: m_LocalPosition.x
