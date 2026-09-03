@@ -17,7 +17,7 @@ MonoBehaviour:
   moveSpeed: 5
   jumpPower: 8
   hitWallPower: 4
-  fallSpeed: 2.5
+  fallSpeed: 3.5
   rollSpeed: 10
   groundLayer:
     serializedVersion: 2
@@ -29,7 +29,7 @@ MonoBehaviour:
   knockbackDurationTime: 0.3
   rollDurationTime: 0.45
   cantInputDurationTime: 0.2
-  groundCheckDistance: 1
+  groundCheckDistance: 0.9
   wallCheckBoxSize: {x: 0.2, y: 0.4}
   wallCheckDistance: 0.4
   lowWallCheckOffset: -0.7

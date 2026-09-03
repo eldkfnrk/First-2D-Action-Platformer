@@ -536,10 +536,19 @@ public class JumpState : BaseState
 
     public override void Update()
     {
-        if(fsmController.variableData.groundCheck.collider != null)
+        Move();  // 점프 중에도 좌우 이동은 가능하도록 설정
+        if (fsmController.variableData.groundCheck.collider != null)
         {
-            if (fsmController.rigid.linearVelocityY <= 0f)
-                fsmController.Idle();
+            // rigidbody의 AddForce는 인자로 전달된 값만큼 x축의 속도와 y축의 속도를 수정한다.(ForceMode가 Impulse면 한 번에 그 속도에 도달하고 Force이면 서서히 도달한다.)
+            // 즉, rigid.AddForce를 사용해서 점프를 구현하면 점프 키를 입력함과 동시에 설정한 점프 파워 값이 y축 속도가 된다.(gravityScale 값이 1인 경우)
+            // 이후 중력 값에 의해 서서히 y축 속도가 줄어드는 원리이다.
+            // 그러니 점프 직후 바로 Ray에 걸려 착지 판정이 되는 문제를 y축에 속도를 이용하여 점프 직후인지를 판단하도록 해서 해결할 수 있을 것이다.
+            // 현재 점프 파워는 8. y축 속도가 점프 파워 값의 -2한 값 이하이고 시작할 때부터 착지 판정이 되도록 설정하면 점프 직후에 바로 착지가 되는 문제와 Fall 상태가 되지 않아도 착지 판정을 할 수 있는 문제를 동시에 해결할 수 있다.
+            // 점프 애니메이션은 Jump에서 Fall로 넘어가야만 Idle로 갈 수 있는데 점프 상태에서 Idle 상태로 이동하면 애니메이션이 Fall로 넘어가지 않아서 애니메이션 전환이 되지 않는 문제가 발생
+            // 해당 문제를 해결하기 위한 방법으로 점프 상태에서 Idle 상태가 되어야 할 때 한 번 Fall 상태로 넘겨서 Fall이 바로 Idle 상태로 넘기도록 하는 방법이 있다.
+            // y축 속도가 0이상의 값이고 점프 파워보다 -2한 값보다 미만이면 Fall 상태로 넘어가도록 설정(상승 중인데 땅에 착지한 것을 판단하는 범위)
+            if (fsmController.rigid.linearVelocityY < 6f && fsmController.rigid.linearVelocityY >= 0f)
+                fsmController.Fall();  // Idle 상태로 보내기 전 애니메이션 전환을 위한 Fall 상태로 보내기
             return;
         }
 
@@ -551,8 +560,6 @@ public class JumpState : BaseState
 
         if (fsmController.rigid.linearVelocityY < 0f)
             fsmController.Fall();
-
-        Move();  // 점프 중에도 좌우 이동은 가능하도록 설정
     }
 
     public override void Exit()
