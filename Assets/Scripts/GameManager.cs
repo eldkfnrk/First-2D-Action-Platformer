@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -68,6 +69,17 @@ public class GameManager : MonoBehaviour
         // 저장 데이터가 있다면 해당 위치로 생성하고 지금 당장은 원래 플레이어가 있던 위치에 생성되도록 설정
         playerSpawnPointId = SpawnPoint.PointID.None;
         SceneManager.sceneLoaded += OnSceneLoad;
+    }
+
+    // 플레이어가 장애물 충돌 시 동작
+    // 할로우 나이트를 인용하여 플레이어가 바닥 장애물의 충돌하면 가까운 위치로 리스폰 되도록 설정
+    // 이때 리스폰 위치 설정은 빈 오브젝트의 IsTrigger를 활성화 시킨 콜라이더를 두고 이를 체크 포인트로 설정하여 플레이어가 이 체크 포인트와 충돌하면 해당 체크 포인트가 저장하고 있는 리스폰 좌표를 저장(runtime 데이터로 리스폰 위치를 저장)
+    // 초기 리스폰 위치는 플레이어가 생성된 위치이고 체크 포인트는 맵을 어떻게 통과하든 충돌이 되도록 좌우로는 얇고 상하로는 맵을 가득 차도록 배치시켜야 문제가 발생하지 않는다.
+    // 체크 포인트를 지나면 저장되는 리스폰 지점의 좌표는 각 체크 포인트에 저장된 좌표를 플레이어가 충돌 시 불러오는 것으로 설정할 예정
+
+    public void RespawnPlayer(Vector2 respawnPoint)
+    {
+        player.transform.position = respawnPoint;
     }
 
     public void AttackEnemies(Collider2D[] attackedEnemies, Vector2 attackBoxPos)
@@ -150,6 +162,7 @@ public class GameManager : MonoBehaviour
         CinemachineCamera cinemachine = playerCamera.GetComponent<CinemachineCamera>();
         cinemachine.Follow = player.transform;
         cinemachine.LookAt = player.transform;
+        cinemachine.Lens.OrthographicSize = 12f;  // 시야각을 넓히는 방법은 시네머신의 Lens 중 OrthographicSize 값을 키우는 것이다.(씬에서는 FOV라 되어 있는데 플레이 모드는 OrthographicSize라 되어 있어서 알아내느라 시간이 걸렸다. 왜 이렇게 되는지 이해가 되지 않는다.)
     }
 
     void OnSceneLoad(Scene scene, LoadSceneMode mode)
@@ -163,27 +176,4 @@ public class GameManager : MonoBehaviour
         spawnSystem.EnemyRespawn();
         Debug.Log("씬 변환 완료. 현재 씬 : " + curSceneName);
     }
-
-    // 현재 아이디어
-    // 게임 시작 전 메인 페이지에 해당하는 씬이 존재하도록 설정
-    // 게임 시작 시 게임 매니저를 생성함과 동시에 DontDestroyOnLoad로 설정
-    // 게임 매니저가 플레이어와 메인 카메라와 같은 DontDestroyOnLoad를 생성 및 설정
-    // 게임은 데이터를 저장하는데 현재 씬과 플레이어의 위치, 플레이어 데이터, 게임 진행에 관련된 데이터 등을 저장
-    // 게임 매니저가 저장된 데이터를 적용 및 오브젝트 생성, 위치 선정 등을 수행
-
-    // 현재 목표(이 포폴에 추가했으면 하는 요소들)
-    // 간단한 3타입의 적 생성
-    // 플레이어의 자연스러운 상태 전환
-    // 1개의 보스 생성
-    // 대화 시스템
-    // 간단한 컷씬 1개
-    // 저장과 불러오기 기능
-    // 숙련도 시스템
-    // 상점 거래
-
-    // 이 포폴로 얻고자 하는 것
-    // FSM, Tree 등과 같은 자료구조와 알고리즘 적용 연습
-    // JSON이나 플레이어 프립과 같은 저장 시스템과 불러오기 시스템 습득
-    // 대화 시스템을 통한 데이터 연결 관련 기술 습득
-    // 간단한 컷씬을 통해 카메라와 애니메이션 관련 기술 습득
 }

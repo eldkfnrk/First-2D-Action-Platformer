@@ -3,12 +3,9 @@ using UnityEngine;
 
 public class EnemyC : Enemy
 {
-    ContactFilter2D playerFilter;
-    Collider2D[] detectPlayer;
-    int isDetect;
-
     // 이 적에서만 사용할 데이터이기 때문에 따로 선언
     Vector2 territoryCenterPoint;  // 영역 중심점
+    Vector2 curDetectPlayerBoxSize;
 
     float goHighTimer;
 
@@ -16,9 +13,7 @@ public class EnemyC : Enemy
     {
         base.Awake();
         territoryCenterPoint = (Vector2)transform.position + constantData.detectPlayerBoxOffset;  // 이 타입의 적은 자신의 영역의 침범을 검사하는 것이기에 고정된 위치를 사용. 그래서 이를 Awake에서 적용.
-        detectPlayer = new Collider2D[4];  // 플레이어의 하위 오브젝트가 추가될 수 있고 그 중 판단해야 하는 것이 있을 수 있으니 넉넉한 크기로 잡고 수행
-        playerFilter.useLayerMask = true;
-        playerFilter.SetLayerMask(constantData.playerLayer);
+        curDetectPlayerBoxSize = constantData.detectPlayerBoxSize;
     }
 
     protected override void Start()
@@ -50,10 +45,6 @@ public class EnemyC : Enemy
                 EnemyStop();
                 CrushRoutineStart();
             }
-            else
-            {
-
-            }
         }
     }
 
@@ -67,10 +58,6 @@ public class EnemyC : Enemy
                 EnemyStop();
                 CrushRoutineStart();
             }
-            else
-            {
-
-            }
         }
     }
 
@@ -78,7 +65,7 @@ public class EnemyC : Enemy
     {
         variableData.detectPlayerBoxPos.x = transform.position.x + variableData.sightDirection * constantData.detectPlayerBoxOffset.x;
         variableData.detectPlayerBoxPos.y = transform.position.y + constantData.detectPlayerBoxOffset.y;
-        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
+        variableData.detectPlayer = Physics2D.BoxCast(variableData.detectPlayerBoxPos, curDetectPlayerBoxSize, 0f, Vector2.zero, 0f, constantData.playerLayer);
 
         // 앞에 벽이 있는 경우 탐지하지 못하는 것으로 설정
         if (variableData.frontCheck.collider != null)
@@ -98,6 +85,12 @@ public class EnemyC : Enemy
         return false;
     }
 
+    public override void StateIdle()
+    {
+        curDetectPlayerBoxSize = constantData.detectPlayerBoxSize;
+        base.StateIdle();
+    }
+
     public override void StateMove()
     {
         fsm.ChangeState(State.Move);
@@ -109,6 +102,7 @@ public class EnemyC : Enemy
     public override void StateChase()
     {
         fsm.ChangeState(State.Chase);
+        curDetectPlayerBoxSize = constantData.detectPlayerBoxSize + (Vector2.one * 4.5f);
         variableData.cantMove = false;
         actionTimer = 0f;
         enemyAnimation.PlayIdle();
@@ -156,13 +150,6 @@ public class EnemyC : Enemy
 
     public override void ActionMove()
     {
-        isDetect = Physics2D.OverlapBox(territoryCenterPoint, constantData.detectPlayerBoxSize, 0, playerFilter, detectPlayer);
-        if (isDetect == 1)
-        {
-            StateChase();
-            return;
-        }
-
         EnemyMove();
         ChangeAction();
     }
@@ -172,12 +159,22 @@ public class EnemyC : Enemy
         EnemyChaseMove();
     }
 
+    bool endAttack = false;
+
     public override void ActionAttack()
     {
+        // 수정 필요
         if (!variableData.isAttack)
         {
-            actionTimer = 0f;
-            StateMove();
+            if (endAttack)
+            {
+                endAttack = false;
+                StateChase();
+            }
+            else
+            {
+                StateMove();
+            }
             return;
         }
 
@@ -188,28 +185,23 @@ public class EnemyC : Enemy
 
         if (variableData.frontCheck.collider != null || variableData.floorCheck.collider != null)
         {
-            variableData.isCrush = true;
-            actionTimer = 0f;
-            EnemyStop();
-            CrushRoutineStart();
+            AttackStop();
         }
 
         // 플레이어, 벽, 바닥 이 3가지 중 하나와도 충돌하지 않고 2초가 지나면 일정 시간 경직을 추고 다시 Chase 상태로 바꾸도록 진행
         if (actionTimer > 2.5f)
         {
-            actionTimer = 0f;
-            StartCoroutine(AttackStopRoutine());
+            endAttack = true;
+            AttackStop();
         }
     }
 
-    IEnumerator AttackStopRoutine()
+    void AttackStop()
     {
+        actionTimer = 0f;
         variableData.isCrush = true;
         EnemyStop();
-        yield return new WaitForSeconds(0.3f);
-        variableData.isCrush = false;
-        variableData.isAttack = false;
-        StateChase();
+        CrushRoutineStart();
     }
 
     [SerializeField] private float boundaryHeight;
@@ -292,7 +284,7 @@ public class EnemyC : Enemy
     {
         if (!Application.isPlaying) return;
         Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, constantData.detectPlayerBoxSize);
+        Gizmos.DrawWireCube(variableData.detectPlayerBoxPos, curDetectPlayerBoxSize);
         Gizmos.DrawRay(variableData.floorCheckOrigin, Vector2.down * constantData.floorCheckDistance);
         Gizmos.DrawRay(transform.position, Vector2.right * constantData.frontCheckDistance * variableData.sightDirection);
     }

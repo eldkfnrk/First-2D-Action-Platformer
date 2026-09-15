@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
   maxHp: 3
   maxStamina: 0
-  moveSpeed: 5
+  moveSpeed: 6
   jumpPower: 8
   hitWallPower: 4
   fallSpeed: 3.5
@@ -34,7 +34,7 @@ MonoBehaviour:
   wallCheckDistance: 0.4
   lowWallCheckOffset: -0.7
   knockbackXPower: 5
-  knockbackYPower: 3.5
+  knockbackYPower: 2
   blockKnockbackPower: 3.5
   attackBoxSize: {x: 1.5, y: 1.6}
   blockBoxXPos: 0.8

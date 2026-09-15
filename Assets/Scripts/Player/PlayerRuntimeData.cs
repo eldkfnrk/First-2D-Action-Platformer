@@ -47,4 +47,7 @@ public class PlayerRuntimeData : MonoBehaviour
     public bool atkRoutine;
     public int atkKeyDownCount;
     public int atkCount;
+
+    public Vector2 RespawnPoint;
+    public bool obstacleHit;
 }

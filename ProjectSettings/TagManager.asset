@@ -9,6 +9,8 @@ TagManager:
   - Block
   - PlayerCamera
   - GameManager
+  - Obstacle
+  - CheckPoint
   layers:
   - Default
   - TransparentFX

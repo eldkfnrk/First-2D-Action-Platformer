@@ -219,6 +219,7 @@ public class Enemy : MonoBehaviour
 
     public virtual void StateAttack()
     {
+        actionTimer = 0f;
         variableData.isAttack = true;
         fsm.ChangeState(State.Attack);
         EnemyStop();
@@ -261,13 +262,21 @@ public class Enemy : MonoBehaviour
     {
         if (variableData.cantMove)
         {
-            if (!DetectPlayer())
+            if (DetectPlayer())
+            {
+                variableData.cantMove = false;
+                actionTimer = 0f;
+            }
+            else if (actionTimer >= 1.5f)  // 플레이어를 놓친 후 1.5초 동안 가만히 경계하다가 다시 원래 있던 곳으로 돌아가도록 설정
             {
                 ChangeGoBack();
                 return;
             }
             else
-                ChangeChase();
+            {
+                actionTimer += Time.deltaTime;
+                return;
+            }
         }
 
         EnemyChaseMove();
@@ -282,6 +291,12 @@ public class Enemy : MonoBehaviour
 
     public virtual void ActionGoBack()
     {
+        if (DetectPlayer())
+        {
+            StateChase();
+            return;
+        }
+
         if (ArriveSpawnLoc())
             return;
 

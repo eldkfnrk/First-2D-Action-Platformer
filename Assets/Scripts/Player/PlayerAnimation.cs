@@ -122,6 +122,7 @@ public class PlayerAnimation : MonoBehaviour
 
     public void PlayDeath()
     {
+        PlayIdle();  // 모든 애니메이션 파라미터를 초기화하기 위해 호출(혹시 모를 애니메이션 전환 실패 문제를 방지하기 위한 호출 - 실제 WallSlide 상태에서는 동작이 안 되는 문제가 있었기 때문에 추가)
         animator.SetTrigger("Death");
     }
 }
